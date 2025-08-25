@@ -2,11 +2,14 @@ from __future__ import absolute_import
 
 __author__ = 'katharine'
 
+import logging
 import threading
 import queue
 
 from . import BaseEventHandler, BaseEventQueue
 from libpebble2.exceptions import TimeoutError
+
+logger = logging.getLogger("libpebble2.events")
 
 
 class ThreadedEventHandler(BaseEventHandler):
@@ -40,8 +43,13 @@ class ThreadedEventHandler(BaseEventHandler):
         return _QueuedEventWait(self, event)
 
     def broadcast_event(self, event, *args):
-        for handler in list(self._handlers.get(event, {}).values()):
-            handler(*args)
+        with self._handler_lock:
+            handlers = list(self._handlers.get(event, {}).values())
+        for handler in handlers:
+            try:
+                handler(*args)
+            except Exception:
+                logger.exception("Event handler for %r threw", event)
 
 
 class _BlockingEventWait(object):
