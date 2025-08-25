@@ -13,14 +13,11 @@ class MessageTargetWatch(MessageTarget):
 
 
 class BaseTransport(metaclass=ABCMeta):
-    @property
-    def must_initialise(self):
-        """
-        :return: ``True`` if libpebble2 is responsible for negotiating the connection; otherwise ``False``.
-        """
-        pass
+    # default for transports that don't need the phone-app handshake
+    must_initialise = False
 
     @property
+    @abstractmethod
     def connected(self):
         """
         :return: ``True`` if the transport is currently connected; otherwise ``False``.
