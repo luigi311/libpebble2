@@ -7,7 +7,7 @@ import struct
 try:
     from pebble import pulse2
 except ImportError:
-    pass
+    pulse2 = None
 
 from . import BaseTransport, MessageTargetWatch
 from libpebble2.exceptions import ConnectionError, PebbleError
@@ -30,6 +30,9 @@ class PULSETransport(BaseTransport):
     OPCODE_PROTOCOL_CLOSE = 0x3
 
     def __init__(self, link):
+        if pulse2 is None:
+            raise ImportError("pebble.pulse2 is required for PULSETransport") from None
+
         self.link = link
         self.connection = None
         self.buffer = b''
