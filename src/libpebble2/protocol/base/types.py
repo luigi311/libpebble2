@@ -619,8 +619,11 @@ class Optional(Field):
     def prepare(self, *args):
         self.field.prepare(*args)
 
-    def value_to_bytes(self, *args, **kwargs):
-        return self.field.value_to_bytes(*args, **kwargs)
+    def value_to_bytes(self, obj, value, default_endianness=DEFAULT_ENDIANNESS):
+        if value is None:
+            return b''
+
+        return self.field.value_to_bytes(obj, value, default_endianness=default_endianness)
 
     def buffer_to_value(self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS):
         if len(buffer) <= offset:
