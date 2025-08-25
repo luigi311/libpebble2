@@ -173,7 +173,7 @@ class UUID(Field):
 
 
 class Union(Field):
-    """
+    r"""
     Represents a union of some other set of fields or packets, determined by some other field (``determinant``).
 
     Example usage: ::
@@ -187,8 +187,8 @@ class Union(Field):
 
     :param determinant: The field that is used to determine which possible entry to use.
     :type determinant: Field
-    :param contents: A :class:`dict` mapping values of ``determinant`` to either :class:`Field`\ s or
-                     :class:`PebblePacket`\ s
+    :param contents: A :class:`dict` mapping values of ``determinant`` to either :class:`Field` s or
+                     :class:`PebblePacket` s
                      that this :class:`Union` can represent. This dictionary is inverted for use in serialisation, so it
                      should be a one-to-one mapping.
     :type contents: dict
@@ -420,8 +420,8 @@ class FixedString(Field):
 
 
 class PascalList(Field):
-    """
-    Represents a list of :class:`.PebblePacket`\ s, each of which is prefixed with a byte indicating its length.
+    r"""
+    Represents a list of :class:`.PebblePacket` s, each of which is prefixed with a byte indicating its length.
 
     :param member_type: The type of :class:`.PebblePacket` in the list.
     :type member_type: ~builtins.type
@@ -475,8 +475,8 @@ class PascalList(Field):
 
 
 class FixedList(Field):
-    """
-    Represents a list of either :class:`PebblePacket`\ s or :class:`Field`\ s with either a fixed number of entries,
+    r"""
+    Represents a list of either :class:`PebblePacket` s or :class:`Field` s with either a fixed number of entries,
     a fixed length (in bytes), or both. There are no dividers between entries; the members must be fixed-length.
 
     If neither ``count`` nor ``length`` is set, members will be read until the end of the buffer.

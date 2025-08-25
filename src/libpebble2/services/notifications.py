@@ -1,9 +1,10 @@
 from __future__ import absolute_import
+
+from libpebble2.protocol.legacy2 import LegacyNotification
+from libpebble2.protocol.timeline import TimelineAction, TimelineAttribute, TimelineItem
 __author__ = 'katharine'
 
 from libpebble2.protocol.blobdb import BlobDatabaseID
-from libpebble2.protocol.legacy2 import *
-from libpebble2.protocol.timeline import *
 from libpebble2.services.blobdb import BlobDBClient, SyncWrapper
 
 import struct
@@ -86,7 +87,7 @@ class Notifications(object):
         notification = TimelineItem(
             item_id=item_id,
             parent_id=uuid.UUID(int=0),
-            timestamp=time.time(),
+            timestamp=int(time.time()),
             duration=0,
             type=TimelineItem.Type.Notification,
             flags=0,

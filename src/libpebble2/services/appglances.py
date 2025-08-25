@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 __author__ = 'katharine'
 
-from libpebble2.protocol.appglance import *
+from libpebble2.protocol.appglance import AppGlance
 from libpebble2.protocol.blobdb import BlobDatabaseID
 from libpebble2.services.blobdb import BlobDBClient, SyncWrapper
 
@@ -35,7 +35,7 @@ class AppGlances(object):
         """
         glance = AppGlance(
             version=1,
-            creation_time=time.time(),
+            creation_time=int(time.time()),
             slices=(slices or [])
         )
         SyncWrapper(self._blobdb.insert, BlobDatabaseID.AppGlance, target_app, glance.serialise()).wait()
