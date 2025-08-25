@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from libpebble2.protocol.legacy2 import LegacyNotification
 from libpebble2.protocol.timeline import TimelineAction, TimelineAttribute, TimelineItem
 __author__ = 'katharine'

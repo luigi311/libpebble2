@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division
 __author__ = 'katharine'
 
 from libpebble2.events.mixin import EventSourceMixin

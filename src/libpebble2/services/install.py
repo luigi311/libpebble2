@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 __author__ = 'katharine'
 
 from .blobdb import BlobDBClient, BlobDatabaseID, SyncWrapper, BlobStatus
