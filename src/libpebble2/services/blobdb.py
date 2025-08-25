@@ -5,7 +5,7 @@ from collections import namedtuple, OrderedDict
 import random
 import threading
 import time
-from six.moves.queue import Queue
+from queue import Queue
 
 from libpebble2.events.mixin import EventSourceMixin
 from libpebble2.protocol.blobdb import *

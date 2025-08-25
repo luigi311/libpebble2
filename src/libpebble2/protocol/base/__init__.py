@@ -1,8 +1,6 @@
 from __future__ import print_function, absolute_import
 __author__ = 'katharine'
 
-from six import with_metaclass, iteritems
-
 from binascii import hexlify
 import collections
 import logging
@@ -47,7 +45,7 @@ class PacketType(type):
         for base in bases:
             if hasattr(base, '_type_mapping'):
                 dct['_type_mapping'].update(getattr(base, '_type_mapping'))
-        for k, v in iteritems(dct):
+        for k, v in dct.items():
             if not isinstance(v, Field):
                 continue
             v._name = k
@@ -66,7 +64,7 @@ class PacketType(type):
                 _PacketRegistry[cls._Meta['endpoint']] = cls
         # Fill in all of the fields with a reference to this class.
         # TODO: This isn't used any more; remove it?
-        for k, v in iteritems(cls._type_mapping):
+        for k, v in cls._type_mapping.items():
             v._parent = cls
         super(PacketType, cls).__init__(name, bases, dct)
 
@@ -74,8 +72,8 @@ class PacketType(type):
         return self.__name__
 
 
-class PebblePacket(with_metaclass(PacketType)):
-    """
+class PebblePacket(metaclass=PacketType):
+    r"""
     Represents some sort of Pebble Protocol message.
 
     A PebblePacket can have an inner class named ``Meta`` containing some information about the property:
@@ -100,10 +98,10 @@ class PebblePacket(with_metaclass(PacketType)):
            command = Uint8(default=0x01)
            response = Uint8(enum=AppFetchStatus)
 
-    :param \*\*kwargs: Initial values for any properties on the object.
+    :param **kwargs: Initial values for any properties on the object.
     """
     def __init__(self, **kwargs):
-        for k, v in iteritems(kwargs):
+        for k, v in kwargs.items():
             if k.startswith('_'):
                 raise AttributeError("You cannot set internal properties during construction.")
             getattr(self, k)  # Throws an exception if the property doesn't exist.
@@ -126,17 +124,17 @@ class PebblePacket(with_metaclass(PacketType)):
             endianness = self._Meta.get('endianness', endianness)
 
         inferred_fields = set()
-        for k, v in iteritems(self._type_mapping):
+        for k, v in self._type_mapping.items():
             inferred_fields |= {x._name for x in v.dependent_fields()}
         for field in inferred_fields:
             setattr(self, field, None)
 
         # Some fields want to manipulate other fields that appear before them (e.g. Unions)
-        for k, v in iteritems(self._type_mapping):
+        for k, v in self._type_mapping.items():
             v.prepare(self, getattr(self, k))
 
         message = b''
-        for k, v in iteritems(self._type_mapping):
+        for k, v in self._type_mapping.items():
             message += v.value_to_bytes(self, getattr(self, k), default_endianness=endianness)
         return message
 
@@ -194,7 +192,7 @@ class PebblePacket(with_metaclass(PacketType)):
         offset = 0
         if hasattr(cls, '_Meta'):
             default_endianness = cls._Meta.get('endianness', default_endianness)
-        for k, v in iteritems(cls._type_mapping):
+        for k, v in cls._type_mapping.items():
             try:
                 value, length = v.buffer_to_value(obj, message, offset, default_endianness=default_endianness)
             except Exception:

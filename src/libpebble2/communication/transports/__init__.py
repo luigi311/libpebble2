@@ -1,8 +1,6 @@
 __author__ = 'katharine'
 
-from six import with_metaclass
-
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import ABCMeta, abstractmethod
 
 
 class MessageTarget(object):
@@ -14,15 +12,15 @@ class MessageTargetWatch(MessageTarget):
     pass
 
 
-class BaseTransport(with_metaclass(ABCMeta)):
-    @abstractproperty
+class BaseTransport(metaclass=ABCMeta):
+    @property
     def must_initialise(self):
         """
         :return: ``True`` if libpebble2 is responsible for negotiating the connection; otherwise ``False``.
         """
         pass
 
-    @abstractproperty
+    @property
     def connected(self):
         """
         :return: ``True`` if the transport is currently connected; otherwise ``False``.

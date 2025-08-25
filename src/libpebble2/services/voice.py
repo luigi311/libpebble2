@@ -56,9 +56,6 @@ class VoiceService(EventSourceMixin):
         if isinstance(packet.data, SessionSetupCommand):
             self._handle_session_setup(packet.flags, packet.data)
 
-    def _handle_audio(self, packet):
-        pass
-
     def _handle_session_setup(self, flags, message):
         if ((message.session_type != SessionType.Dictation) or
                 (message.session_id == VoiceService.SESSION_ID_INVALID) or

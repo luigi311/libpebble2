@@ -119,7 +119,7 @@ class PebbleConnection(object):
             except IncompleteMessage:
                 self.pending_bytes = message
                 break
-            except:
+            except Exception:
                 # At this point we've failed to deconstruct the message via normal means, but we don't want to end
                 # up permanently desynced (because we wiped a partial message), nor do we want to get stuck (because
                 # we didn't wipe anything). We therefore parse the packet length manually and skip ahead that far.
@@ -259,7 +259,7 @@ class PebbleConnection(object):
         :param packet: The message to send.
         :type packet: .PebblePacket
         """
-        if self.log_packet_level:
+        if self.log_packet_level is not None:
             logger.log(self.log_packet_level, "-> %s", packet)
         serialised = packet.serialise_packet()
         self.event_handler.broadcast_event("raw_outbound", serialised)
@@ -295,7 +295,7 @@ class PebbleConnection(object):
         :param message: The message to send to the pebble.
         :type message: bytes
         """
-        if self.log_protocol_level:
+        if self.log_protocol_level is not None:
             logger.log(self.log_protocol_level, "-> %s", hexlify(message).decode())
         self.transport.send_packet(message)
 

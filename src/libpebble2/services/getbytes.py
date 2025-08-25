@@ -2,7 +2,6 @@ from __future__ import absolute_import
 __author__ = 'katharine'
 
 from array import array
-from six.moves import range
 
 from libpebble2.events.mixin import EventSourceMixin
 from libpebble2.exceptions import GetBytesError
@@ -80,6 +79,6 @@ class GetBytesService(EventSourceMixin):
                 data[part.offset:part.offset+len(part.data)] = array('B', part.data)
 
             # Return the data as a more standard bytearray.
-            return data.tostring()
+            return data.tobytes()
         finally:
             queue.close()

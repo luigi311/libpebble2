@@ -1,8 +1,6 @@
 from __future__ import absolute_import
 __author__ = 'katharine'
 
-from six import iteritems
-
 import struct
 
 from libpebble2.events.mixin import EventSourceMixin
@@ -111,7 +109,7 @@ class AppMessageService(EventSourceMixin):
         tid = self._get_txid()
         message = self._message_type(transaction_id=tid)
         tuples = []
-        for k, v in iteritems(dictionary):
+        for k, v in dictionary.items():
             if isinstance(v, AppMessageNumber):
                 tuples.append(AppMessageTuple(key=k, type=v.type,
                                 data=struct.pack(self._type_mapping[v.type, v.length], v.value)))

@@ -15,15 +15,14 @@ def unhex(string: str) -> bytes:
     return bytes.fromhex(string)
 
 
-class TestPacket(PebblePacket):
+class PacketUnderTest(PebblePacket):
     command = Uint8()
-    length = Uint8()
-    count = Uint8()
-
+    length  = Uint8()
+    count   = Uint8()
 
 @pytest.fixture
 def packet():
-    return TestPacket()
+    return PacketUnderTest()
 
 
 def do_serialise_test(packet, field, tuples):
@@ -151,13 +150,13 @@ def test_int16_dserialise_nothing(packet):
 
 def test_uuid_serialise(packet):
     field = UUID()
-    some_uuid = uuid.UUID("012345678-1234-1234-1234-123456789ab")
+    some_uuid = uuid.UUID("01234567-8123-4123-4123-4123456789ab")
     assert field.value_to_bytes(packet, some_uuid) == unhex("012345678123412341234123456789ab")
 
 
 def test_uuid_deserialise(packet):
     field = UUID()
-    some_uuid = uuid.UUID("012345678-1234-1234-1234-123456789ab")
+    some_uuid = uuid.UUID("01234567-8123-4123-4123-4123456789ab")
     assert field.buffer_to_value(packet, unhex("012345678123412341234123456789ab"), 0) == (some_uuid, 16)
     assert field.buffer_to_value(packet, unhex("000000012345678123412341234123456789ab"), 3) == (some_uuid, 16)
 

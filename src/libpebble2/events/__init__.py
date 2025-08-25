@@ -1,12 +1,10 @@
 from __future__ import absolute_import
 __author__ = 'katharine'
 
-from six import with_metaclass
-
 from abc import ABCMeta, abstractmethod
 
 
-class BaseEventHandler(with_metaclass(ABCMeta)):
+class BaseEventHandler(metaclass=ABCMeta):
     """
     An event handler, used throughout libpebble2 to indicate that something happened. These should ordinarily not need
     to be directly invoked by a client of libpebble2.
@@ -67,7 +65,7 @@ class BaseEventHandler(with_metaclass(ABCMeta)):
         pass
 
 
-class BaseEventQueue(with_metaclass(ABCMeta)):
+class BaseEventQueue(metaclass=ABCMeta):
     @abstractmethod
     def close(self):
         """

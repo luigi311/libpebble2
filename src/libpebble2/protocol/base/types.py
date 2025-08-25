@@ -1,8 +1,6 @@
 from __future__ import absolute_import
 __author__ = "katharine"
 
-from six import iteritems
-
 import struct
 import uuid
 
@@ -204,7 +202,7 @@ class Union(Field):
     def __init__(self, determinant, contents, accept_missing=False, length=None):
         self.determinant = determinant
         self.contents = contents
-        self.type_map = {v: k for k, v in iteritems(self.contents)}
+        self.type_map = {v: k for k, v in self.contents.items()}
         self.accept_missing = accept_missing
         self.length = length
         super(Union, self).__init__()
@@ -362,8 +360,7 @@ class NullTerminatedString(Field):
         end = offset
         if end >= len(buffer):
             raise PacketDecodeError("{}: No bytes available.")
-        while buffer[end] != b'\x00'[0]:
-            print(buffer[end])
+        while buffer[end] != 0:
             end += 1
             if end >= len(buffer):
                 raise PacketDecodeError("{}: Reached end of buffer without terminating.".format(self.type))

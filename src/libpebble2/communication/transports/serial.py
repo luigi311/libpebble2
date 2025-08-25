@@ -38,7 +38,10 @@ class SerialTransport(BaseTransport):
 
     @property
     def connected(self):
-        return self.connection is not None and self.connection.isOpen()
+        if self.connection is None:
+            return False
+
+        return bool(self.connection.is_open)
 
     def read_packet(self):
         try:

@@ -3,7 +3,7 @@ from __future__ import absolute_import
 __author__ = 'katharine'
 
 import threading
-from six.moves import queue
+import queue
 
 from . import BaseEventHandler, BaseEventQueue
 from libpebble2.exceptions import TimeoutError
@@ -81,4 +81,6 @@ class _QueuedEventWait(BaseEventQueue):
             raise TimeoutError()
 
     def __iter__(self):
-        yield self.get()
+        while True:
+            yield self.get()
+

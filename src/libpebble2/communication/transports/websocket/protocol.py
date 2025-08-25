@@ -1,8 +1,6 @@
 from __future__ import absolute_import
 __author__ = 'katharine'
 
-from six import iteritems
-
 from enum import IntEnum
 
 from libpebble2.protocol.base import PebblePacket
@@ -156,5 +154,5 @@ from_watch = {
     0x0c: WebSocketTimelineResponse,
 }
 
-endpoints = {v: k for k, v in iteritems(to_watch)}
-endpoints.update({v: k for k, v in iteritems(from_watch)})
+endpoints = {v: k for k, v in to_watch.items()}
+endpoints.update({v: k for k, v in from_watch.items()})
