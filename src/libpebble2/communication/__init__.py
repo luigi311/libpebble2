@@ -96,9 +96,10 @@ class PebbleConnection(object):
         Spawns a new thread that runs the message loop until the Pebble disconnects.
         ``run_async`` will call :meth:`fetch_watch_info` on your behalf, and block until it receives a response.
         """
-        thread = threading.Thread(target=self.run_sync)
-        thread.daemon = True
-        thread.name = "PebbleConnection"
+        # If called prior to connecting, do so now.
+        if not self.connected:
+            self.connect()
+        thread = threading.Thread(target=self.run_sync, daemon=True, name="PebbleConnection")
         thread.start()
         self.fetch_watch_info()
 
