@@ -156,7 +156,8 @@ class SyncWrapper(object):
         method(*args, callback=self.callback, **kwargs)
 
     def wait(self, timeout=15):
-        self.event.wait(timeout=timeout)
+        if not self.event.wait(timeout):
+            raise TimeoutError("BlobDB operation timed out")
         return self.result
 
     def callback(self, *args, **kwargs):
