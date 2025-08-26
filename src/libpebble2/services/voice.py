@@ -1,7 +1,7 @@
 __author__ = "andrews"
 
-import uuid
 import logging
+import uuid
 from enum import IntEnum
 
 from libpebble2.events.mixin import EventSourceMixin
@@ -123,15 +123,13 @@ class VoiceService(EventSourceMixin):
             self._broadcast_event("audio_stop")
             self._session_id = VoiceService.SESSION_ID_INVALID
 
-    def send_stop_audio(self):
+    def send_stop_audio(self, session_id=None):
         """
         Stop an audio streaming session
         """
-        assert self._session_id != VoiceService.SESSION_ID_INVALID
-
-        self._pebble.send_packet(
-            AudioStream(session_id=self._session_id, data=StopTransfer())
-        )
+        sid = session_id if session_id is not None else self._session_id
+        assert sid != self.SESSION_ID_INVALID
+        self._pebble.send_packet(AudioStream(session_id=sid, data=StopTransfer()))
 
     def send_session_setup_result(self, result, app_uuid=None):
         """
