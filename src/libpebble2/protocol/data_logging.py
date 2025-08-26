@@ -3,7 +3,7 @@ __author__ = 'katharine'
 from enum import IntEnum
 
 from .base import PebblePacket
-from .base.types import *
+from .base.types import BinaryArray, Boolean, FixedList, Uint16, Uint32, Uint8, Union, UUID
 
 __all__ = ["DataLoggingReportOpenSessions", "DataLoggingDespoolOpenSession",
            "DataLoggingDespoolSendData", "DataLoggingCloseSession", "DataLoggingACK",

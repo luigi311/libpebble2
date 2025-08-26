@@ -9,7 +9,7 @@ except ImportError:
     pulse2 = None
 
 from . import BaseTransport, MessageTargetWatch
-from libpebble2.exceptions import ConnectionError, PebbleError
+from libpebble2.exceptions import ConnectionError
 
 
 class PULSETransport(BaseTransport):

@@ -1,7 +1,7 @@
 __author__ = 'katharine'
 
 from .base import PebblePacket
-from .base.types import *
+from .base.types import BinaryArray, PascalList, Uint16, Uint8, Union
 
 __all__ = ["EncoderFrame", "DataTransfer", "StopTransfer", "AudioStream"]
 

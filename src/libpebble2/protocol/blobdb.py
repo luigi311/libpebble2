@@ -3,7 +3,7 @@ __author__ = 'katharine'
 from enum import IntEnum
 
 from .base import PebblePacket
-from .base.types import *
+from .base.types import BinaryArray, Uint16, Uint8, Union
 
 __all__ = ["InsertCommand", "DeleteCommand", "ClearCommand", "BlobDatabaseID", "BlobCommand", "BlobStatus",
            "BlobResponse"]

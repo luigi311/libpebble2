@@ -3,7 +3,7 @@ __author__ = 'katharine'
 from enum import IntEnum
 
 from libpebble2.protocol.base import PebblePacket
-from libpebble2.protocol.base.types import *
+from libpebble2.protocol.base.types import BinaryArray, Boolean, FixedList, Int16, Int8, Optional, Uint16, Uint32, Uint8, Union
 
 HEADER_SIGNATURE = 0xFEED
 FOOTER_SIGNATURE = 0xBEEF

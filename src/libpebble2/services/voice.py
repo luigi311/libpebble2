@@ -1,13 +1,12 @@
 __author__ = 'andrews'
 
-import threading
 import uuid
 import logging
 from enum import IntEnum
 
 from libpebble2.events.mixin import EventSourceMixin
-from libpebble2.protocol.voice import *
-from libpebble2.protocol.audio import *
+from libpebble2.protocol.audio import AudioStream, DataTransfer, StopTransfer
+from libpebble2.protocol.voice import AppUuid, Attribute, AttributeList, AttributeType, DictationResult, Flags, Sentence, SentenceList, SessionSetupCommand, SessionSetupResult, SessionType, Transcription, VoiceControlCommand, VoiceControlResult, Word
 
 __all__ = ["VoiceService", "SetupResult", "TranscriptionResult"]
 

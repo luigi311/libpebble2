@@ -1,18 +1,17 @@
+import struct
+from copy import deepcopy
+from enum import IntEnum
+
+from .base import PebblePacket
+from .base.types import FixedList, Uint16, Uint32, Uint8
+from .timeline import TimelineAttribute
+
 __author__ = 'katharine'
 
 """
 This file is special in that it actually contains definitions of
 blobdb blob formats rather than pebble protocol messages.
 """
-
-from copy import deepcopy
-from enum import IntEnum
-
-from .base import PebblePacket
-from .base.types import *
-from .timeline import TimelineAttribute
-
-import struct
 
 __all__ = ["AppGlanceSliceIconAndSubtitle", "AppGlance"]
 

@@ -3,7 +3,7 @@ __author__ = 'katharine'
 from enum import IntEnum
 
 from .base import PebblePacket
-from .base.types import *
+from .base.types import FixedString, Int32, Uint8, Uint32, UUID, Union
 
 __all__ = ["AppRunState", "AppRunStateStart", "AppRunStateStop", "AppRunStateRequest", "AppMetadata"]
 

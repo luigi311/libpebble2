@@ -3,7 +3,7 @@ __author__ = 'katharine'
 import struct
 
 from libpebble2.events.mixin import EventSourceMixin
-from libpebble2.protocol.appmessage import *
+from libpebble2.protocol.appmessage import AppMessage, AppMessageACK, AppMessageNACK, AppMessagePush, AppMessageTuple
 
 __all__ = ["AppMessageService", "Uint8", "Uint16", "Uint32", "Int8", "Int16", "Int32", "CString", "ByteArray"]
 

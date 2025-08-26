@@ -4,7 +4,7 @@ from array import array
 
 from libpebble2.events.mixin import EventSourceMixin
 from libpebble2.exceptions import GetBytesError
-from libpebble2.protocol.transfers import *
+from libpebble2.protocol.transfers import GetBytes, GetBytesCoredumpRequest, GetBytesUnreadCoredumpRequest, GetBytesFileRequest, GetBytesFlashRequest, GetBytesInfoResponse, GetBytesDataResponse
 
 __all__ = ["GetBytesService"]
 

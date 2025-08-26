@@ -3,7 +3,7 @@ __author__ = 'katharine'
 from enum import IntEnum
 
 from .base import PebblePacket
-from .base.types import *
+from .base.types import BinaryArray, NullTerminatedString, PascalString, Uint32, Uint8, Union
 
 __all__ = ["ObjectType", "PutBytesInstall", "PutBytesInit", "PutBytesAppInit", "PutBytesPut", "PutBytesCommit",
            "PutBytesAbort", "PutBytes", "PutBytesApp", "PutBytesResponse", "GetBytes", "GetBytesCoredumpRequest",

@@ -1,7 +1,7 @@
 __author__ = 'katharine'
 
 from .base import PebblePacket
-from .base.types import *
+from .base.types import PascalList, PascalString, Uint32, Uint8, Union
 
 __all__ = ["AnswerCall", "HangUpCall", "PhoneStateRequest", "IncomingCall", "OutgoingCall", "MissedCall",
            "Ring", "CallStart", "CallEnd", "CallStateItem", "PhoneStateResponse", "PhoneNotification"]

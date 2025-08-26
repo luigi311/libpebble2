@@ -2,7 +2,7 @@ from uuid import UUID
 from unittest.mock import Mock
 
 from libpebble2.services.appmessage import AppMessageService
-from libpebble2.protocol.appmessage import *
+from libpebble2.protocol.appmessage import AppMessage, AppMessagePush, AppMessageACK, AppMessageTuple
 
 
 def test_receive_appmessage_string():

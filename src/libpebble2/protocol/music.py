@@ -3,7 +3,7 @@ __author__ = 'katharine'
 from enum import IntEnum
 
 from .base import PebblePacket
-from .base.types import *
+from .base.types import Optional, PascalString, Uint16, Uint32, Uint8, Union
 
 __all__ = ["MusicControlPlayPause", "MusicControlPause", "MusicControlPlay", "MusicControlNextTrack",
            "MusicControlPreviousTrack", "MusicControlVolumeUp", "MusicControlVolumeDown", "MusicControlGetCurrentTrack",

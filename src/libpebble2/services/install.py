@@ -1,11 +1,12 @@
 __author__ = 'katharine'
 
-from .blobdb import BlobDBClient, BlobDatabaseID, SyncWrapper, BlobStatus
+from libpebble2.protocol.blobdb import BlobDatabaseID
+from .blobdb import BlobDBClient, SyncWrapper, BlobStatus
 from .putbytes import PutBytes, PutBytesType
 from libpebble2.events.mixin import EventSourceMixin
 from libpebble2.exceptions import AppInstallError
 from libpebble2.protocol.apps import AppMetadata, AppRunState, AppRunStateStart, AppFetchRequest, AppFetchResponse, AppFetchStatus
-from libpebble2.protocol.legacy2 import *
+from libpebble2.protocol.legacy2 import LegacyAppInstallRequest, LegacyAppInstallResponse, LegacyUpgradeAppUUID, LegacyBankInfoRequest, LegacyBankInfoResponse, LegacyBankEntry, LegacyAppAvailable, LegacyAppLaunchMessage
 from libpebble2.services.appmessage import AppMessageService, Uint8 as AMUint8
 from libpebble2.util.bundle import PebbleBundle
 

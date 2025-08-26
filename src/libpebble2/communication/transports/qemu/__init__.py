@@ -4,8 +4,7 @@ import socket
 
 from .. import BaseTransport, MessageTarget, MessageTargetWatch
 from .protocol import QemuPacket, QemuInboundPacket, QemuSPP, QemuRawPacket, HEADER_SIGNATURE, FOOTER_SIGNATURE
-from libpebble2.exceptions import ConnectionError
-from libpebble2.protocol.base.types import PacketDecodeError
+from libpebble2.exceptions import ConnectionError, PacketDecodeError
 
 
 class MessageTargetQemu(MessageTarget):

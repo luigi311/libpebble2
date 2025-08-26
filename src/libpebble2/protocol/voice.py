@@ -3,7 +3,7 @@ __author__ = 'andrews'
 from enum import IntEnum
 
 from .base import PebblePacket
-from .base.types import *
+from .base.types import Embed, FixedList, FixedString, UUID, Uint16, Uint32, Uint8, Union
 
 __all__ = ["AudioCodec", "SpeexEncoderInfo", "Transcription", "AttributeType", "Attribute", "AttributeList",
            "SessionType", "Command", "SessionSetupCommand", "VoiceControlCommand", "Result", "SessionSetupResult",

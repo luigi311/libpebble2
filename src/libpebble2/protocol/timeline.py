@@ -1,14 +1,14 @@
+from enum import IntEnum
+
+from .base import PebblePacket
+from .base.types import BinaryArray, FixedList, Uint16, Uint32, Uint8, Union, UUID
+
 __author__ = 'katharine'
 
 """
 This file is special in that it actually contains definitions of
 blobdb blob formats rather than pebble protocol messages.
 """
-
-from enum import IntEnum
-
-from .base import PebblePacket
-from .base.types import *
 
 __all__ = ["TimelineAttribute", "TimelineAction", "TimelineItem",
            "TimelineActionEndpoint", "ActionResponse", "InvokeAction"]

@@ -4,7 +4,7 @@ import unittest
 import uuid
 import struct
 
-from libpebble2.protocol.voice import *
+from libpebble2.protocol.voice import VoiceControlCommand, VoiceControlResult, Command, Result, SessionType, Flags, SessionSetupCommand, SessionSetupResult, TranscriptionType, Transcription, DictationResult, Attribute, AttributeList, AppUuid, SpeexEncoderInfo, Word, Sentence, SentenceList
 
 
 # Helpers for little-endian packing

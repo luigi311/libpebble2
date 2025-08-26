@@ -2,7 +2,7 @@ __author__ = 'katharine'
 
 from libpebble2.events.mixin import EventSourceMixin
 from libpebble2.exceptions import ScreenshotError
-from libpebble2.protocol.screenshots import *
+from libpebble2.protocol.screenshots import ScreenshotRequest, ScreenshotHeader, ScreenshotResponse
 
 
 class Screenshot(EventSourceMixin):

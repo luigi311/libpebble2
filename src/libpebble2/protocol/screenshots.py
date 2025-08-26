@@ -3,7 +3,7 @@ __author__ = 'katharine'
 from enum import IntEnum
 
 from .base import PebblePacket
-from .base.types import *
+from .base.types import BinaryArray, Uint32, Uint8
 
 __all__ = ["ScreenshotRequest", "ScreenshotResponse", "ScreenshotHeader"]
 

@@ -1,7 +1,7 @@
 __author__ = 'katharine'
 
 from .base import PebblePacket
-from .base.types import *
+from .base.types import Boolean, FixedString, Uint16, Uint32, Uint8, Union, UUID
 
 __all__ = ["RequestLogs", "LogMessage", "LogMessageDone", "NoLogMessages", "LogDumpShipping", "AppLogShippingControl",
            "AppLogMessage"]

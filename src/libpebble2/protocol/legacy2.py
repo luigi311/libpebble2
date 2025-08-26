@@ -4,7 +4,7 @@ from enum import IntEnum
 
 from .appmessage import AppMessage
 from .base import PebblePacket
-from .base.types import *
+from .base.types import Boolean, FixedList, FixedString, PascalString, Uint8, Uint32, Union, UUID
 
 __all__ = ["LegacyNotification", "LegacyBankInfoRequest", "LegacyRemoveAppUUID", "LegacyUpgradeAppUUID",
            "LegacyAppAvailable", "LegacyListInstalledUUIDs", "LegacyDescribeInstalledUUID",

@@ -3,7 +3,7 @@ __author__ = 'katharine'
 from enum import IntEnum
 
 from .base import PebblePacket
-from .base.types import *
+from .base.types import BinaryArray, Boolean, Embed, FixedString, Int16, Optional, PascalString, Uint16, Uint32, Uint64, Uint8, Union
 
 # Time manipulation
 

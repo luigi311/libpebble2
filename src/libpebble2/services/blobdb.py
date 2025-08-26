@@ -7,7 +7,8 @@ import time
 from queue import Queue
 
 from libpebble2.events.mixin import EventSourceMixin
-from libpebble2.protocol.blobdb import *
+from libpebble2.exceptions import TimeoutError
+from libpebble2.protocol.blobdb import BlobResponse, BlobCommand, InsertCommand, DeleteCommand, ClearCommand, BlobStatus
 
 __all__ = ["BlobDBClient", "SyncWrapper"]
 

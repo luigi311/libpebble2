@@ -7,7 +7,7 @@ import uuid
 
 from libpebble2.exceptions import PacketDecodeError, PacketEncodeError
 from libpebble2.protocol.base import PebblePacket
-from libpebble2.protocol.base.types import *
+from libpebble2.protocol.base.types import BinaryArray, Embed, Int8, Optional, Uint8, Int16, Uint16, Boolean, UUID, Padding, PascalString, NullTerminatedString, FixedString, FixedList, PascalList, Union
 
 
 def unhex(string: str) -> bytes:

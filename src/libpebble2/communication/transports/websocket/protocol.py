@@ -3,7 +3,7 @@ __author__ = 'katharine'
 from enum import IntEnum
 
 from libpebble2.protocol.base import PebblePacket
-from libpebble2.protocol.base.types import *
+from libpebble2.protocol.base.types import BinaryArray, FixedString, PascalString, Uint8, Uint32, Union
 
 
 class WebSocketRelayFromWatch(PebblePacket):

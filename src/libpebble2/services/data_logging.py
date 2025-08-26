@@ -2,7 +2,7 @@ import logging
 import datetime
 
 from libpebble2.events.mixin import EventSourceMixin
-from libpebble2.protocol.data_logging import *
+from libpebble2.protocol.data_logging import DataLogging, DataLoggingDespoolSendData, DataLoggingReportOpenSessions, DataLoggingDespoolOpenSession, DataLoggingACK, DataLoggingNACK, DataLoggingEmptySession, DataLoggingGetSendEnableRequest, DataLoggingGetSendEnableResponse, DataLoggingSetSendEnable
 from libpebble2.exceptions import TimeoutError
 
 logger = logging.getLogger("libpebble2.services.data_logging")
