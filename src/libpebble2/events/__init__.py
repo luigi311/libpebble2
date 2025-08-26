@@ -1,89 +1,86 @@
 __author__ = "katharine"
 
 from abc import ABCMeta, abstractmethod
+from collections.abc import Callable, Iterator
 
 
 class BaseEventHandler(metaclass=ABCMeta):
-    """
-    An event handler, used throughout libpebble2 to indicate that something happened. These should ordinarily not need
-    to be directly invoked by a client of libpebble2.
-    """
 
     @abstractmethod
-    def register_handler(self, event, handler):
+    def register_handler(self, event: object, handler: Callable) -> object:
         """
         Register a handler for an event.
 
-        :param event: The event to be handled. This can be any object, as long as it's hashable.
-        :param handler: A callback function to be called when the event is triggered. The arguments are dependent
-                        on the event.
-        :return: A handle that can be passed to :meth:`unregister_handler` to remove the registration.
+        Args:
+            event (object): The event to handle.
+            handler (Callable): The handler callable.
+
+        Returns:
+            object: A handle that can be used to unregister the handler.
         """
-        pass
 
     @abstractmethod
-    def unregister_handler(self, handle):
+    def unregister_handler(self, handle: object) -> None:
         """
         Remove a handler for an event using a handle returned by :meth:`register_handler`.
 
-        :param handle: The handle for the registration to remove.
+        Args:
+            handle (object): The handle for the registration to remove.
         """
-        pass
 
     @abstractmethod
-    def wait_for_event(self, event, timeout=10):
+    def wait_for_event(self, event: object, timeout: float = 10) -> object:
         """
         A blocking wait for an event to be fired.
 
-        :param event: The event to wait on.
-        :param timeout: How long to wait before raising :exc:`.TimeoutError`
-        :return: The arguments that were passed to :meth:`broadcast_event`.
+        Args:
+            event (object): The event to wait on.
+            timeout (float): How long to wait before raising :exc:`.TimeoutError`
+
+        Returns:
+            object: The arguments that were passed to :meth:`broadcast_event`.
         """
-        pass
 
     @abstractmethod
-    def queue_events(self, event):
+    def queue_events(self, event: object) -> "BaseEventQueue":
         """
-        Returns a :class:`BaseEventQueue` from which events can be read as they arrive, even if the arrive faster
-        than they are removed.
+        Returns a :class:`BaseEventQueue` from which events can be read as they arrive, even if
+        the arrive faster than they are removed.
 
-        :param event: The events to add to the queue.
-        :return: An event queue.
-        :rtype: BaseEventQueue
+        Args:
+            event (object): The events to add to the queue.
+
+        Returns:
+            BaseEventQueue: An event queue.
         """
-        pass
 
     @abstractmethod
-    def broadcast_event(self, event, *args):
+    def broadcast_event(self, event: object, *args: object) -> object:
         """
         Broadcasts an event to all subscribers for that event, as added by :meth:`register_handler`
-        :meth:`wait_for_event` and :meth:`queue_events`. All arguments after `event` are passed on to the listeners.
+        :meth:`wait_for_event` and :meth:`queue_events`. All arguments after `event` are passed on
+        to the listeners.
 
-        :param event: The event to broadcast.
-        :param args: Any arguments to pass on.
+        Args:
+            event (object): The event to broadcast.
+            *args (object): Any arguments to pass on.
         """
-        pass
 
 
 class BaseEventQueue(metaclass=ABCMeta):
-    @abstractmethod
-    def close(self):
-        """
-        Stop adding events to this queue. It is illegal to call :meth:`get` or iterate over this queue after calling
-        :meth:`close`.
-        """
-        pass
+    """A queue of events, as returned by :meth:`.BaseEventHandler.queue_events`."""
 
     @abstractmethod
-    def get(self, timeout=10):
+    def close(self) -> None:
         """
-        Get the next event in the queue. Blocks until an item is available.
+        Stop adding events to this queue. It is illegal to call :meth:`get` or iterate over this
+        queue after calling :meth:`close`.
         """
-        pass
 
     @abstractmethod
-    def __iter__(self):
-        """
-        Iterate over events in the queue. Blocks if no more items are available.
-        """
-        pass
+    def get(self, timeout: float = 10) -> object:
+        """Get the next event in the queue. Blocks until an item is available."""
+
+    @abstractmethod
+    def __iter__(self) -> Iterator[object]:
+        """Iterate over events in the queue. Blocks if no more items are available."""

@@ -1,7 +1,14 @@
 __author__ = "katharine"
 
+from typing import ClassVar
 
-class PebbleHardware(object):
+
+class PebbleHardware:
+    """
+    Represents Pebble hardware versions and their corresponding platform strings.
+
+    Contains constants for hardware identifiers and a mapping to platform names.
+    """
     UNKNOWN = 0
     TINTIN_EV1 = 1
     TINTIN_EV2 = 2
@@ -28,7 +35,7 @@ class PebbleHardware(object):
     SILK_BB2 = 0xF8
     ROBERT_BB2 = 0xF7
 
-    PLATFORMS = {
+    PLATFORMS: ClassVar[dict[int, str]] = {
         UNKNOWN: "unknown",
         TINTIN_EV1: "aplite",
         TINTIN_EV2: "aplite",
@@ -56,5 +63,14 @@ class PebbleHardware(object):
     }
 
     @classmethod
-    def hardware_platform(cls, hardware):
+    def hardware_platform(cls, hardware: int) -> str:
+        """
+        Returns the platform string corresponding to the given hardware identifier.
+
+        Args:
+            hardware (int): The hardware identifier.
+
+        Returns:
+            str: The platform string
+        """
         return cls.PLATFORMS.get(hardware, "unknown")

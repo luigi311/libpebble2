@@ -1,15 +1,18 @@
 __author__ = "Liam McLoughlin"
 
-import time
 import struct
+import time
 
 try:
-    from pebble import pulse2
+    from pebble import pulse2  # type: ignore[import]
 except ImportError:
     pulse2 = None
 
-from . import BaseTransport, MessageTargetWatch
+import contextlib
+
 from libpebble2.exceptions import ConnectionError
+
+from . import BaseTransport, MessageTarget, MessageTargetWatch
 
 
 class PULSETransport(BaseTransport):
@@ -29,23 +32,36 @@ class PULSETransport(BaseTransport):
     OPCODE_PROTOCOL_OPEN = 0x2
     OPCODE_PROTOCOL_CLOSE = 0x3
 
-    def __init__(self, link):
+    def __init__(self, link) -> None:
         if pulse2 is None:
-            raise ImportError("pebble.pulse2 is required for PULSETransport") from None
+            msg = "pebble.pulse2 is required for PULSETransport"
+            raise ImportError(msg) from None
 
         self.link = link
         self.connection = None
         self.buffer = b""
 
     @staticmethod
-    def _chunks(list_items, chunk_length):
+    def _chunks(list_items: bytes, chunk_length: int):
+        """Yield successive n-sized chunks from list_items."""
         for i in range(0, len(list_items), chunk_length):
             yield list_items[i : i + chunk_length]
 
-    def connect(self):
+    def connect(self) -> None:
+        """
+        Establishes a reliable socket connection using the PPoPULSE protocol.
+
+        Opens a socket on the specified PPoPULSE port and sends a protocol open opcode.
+        Waits for an acknowledgment (ACK) of the protocol open opcode within 10 seconds.
+
+        Raises:
+            ConnectionError: If the socket cannot be opened or if the ACK is not received within
+                the timeout period.
+        """
         self.connection = self.link.open_socket("reliable", self.PPOPULSE_PORT)
         if not self.connection:
-            raise ConnectionError("Failed to open PPoPULSE socket")
+            msg = "Failed to open PPoPULSE socket"
+            raise ConnectionError(msg)
 
         self._send_with_opcode(self.OPCODE_PROTOCOL_OPEN)
         start_time = time.time()
@@ -54,19 +70,34 @@ class PULSETransport(BaseTransport):
             if opcode == self.OPCODE_PROTOCOL_OPEN:
                 break
         else:
-            raise ConnectionError("Timeout waiting for PPoPULSE open ACK")
+            msg = "Timeout waiting for PPoPULSE open ACK"
+            raise ConnectionError(msg)
 
-    def disconnect(self):
-        if self.connected:
-            try:
+    def disconnect(self) -> None:
+        """
+        Disconnects the current connection if it is active.
+
+        If connected, attempts to send a protocol close opcode to the remote endpoint,
+        suppressing any SocketClosed exceptions that may occur during this process.
+        Then closes the connection and sets the connection attribute to None.
+        """
+        if pulse2 is None:
+            return
+
+        if self.connection is not None:
+            with contextlib.suppress(pulse2.exceptions.SocketClosed):
                 self._send_with_opcode(self.OPCODE_PROTOCOL_CLOSE)
-            except pulse2.exceptions.SocketClosed:
-                pass
             self.connection.close()
             self.connection = None
 
     @property
-    def connected(self):
+    def connected(self) -> bool:
+        """
+        Checks if there is an active connection.
+
+        Returns:
+            bool: True if a connection exists, False otherwise.
+        """
         return self.connection is not None
 
     def read_packet(self):
@@ -85,28 +116,56 @@ class PULSETransport(BaseTransport):
             if opcode == self.OPCODE_PROTOCOL_DATA:
                 self.buffer += data
 
-    def send_packet(self, message, target=None):
+        msg = "PULSETransport is not connected"
+        raise ConnectionError(msg)
+
+    def send_packet(self, message, target=None) -> None:
         if target is None:
             target = MessageTargetWatch()
 
-        assert isinstance(target, MessageTargetWatch)
+        if not isinstance(target, MessageTargetWatch):
+            msg = "PULSETransport can only send to MessageTargetWatch targets"
+            raise TypeError(msg)
+
+        if not self.connected or self.connection is None:
+            msg = "PULSETransport is not connected"
+            raise ConnectionError(msg)
+
+        if not isinstance(message, bytes):
+            msg = "PULSETransport can only send byte messages"
+            raise TypeError(msg)
+
         for chunk in self._chunks(message, self.connection.mtu - 1):
             self._send_with_opcode(self.OPCODE_PROTOCOL_DATA, chunk)
 
     def _recv_with_opcode(self):
+        if pulse2 is None:
+            msg = "PULSE transport not available"
+            raise ConnectionError(msg)
+
         try:
+            if self.connection is None:
+                msg = "PULSE transport closed"
+                raise ConnectionError(msg)
             packet = self.connection.receive(block=True)
         except (AttributeError, pulse2.exceptions.SocketClosed):
             self.connection = None
-            raise ConnectionError("PULSE transport closed")
+            msg = "PULSE transport closed"
+            raise ConnectionError(msg)
 
-        assert len(packet) >= 1
+        if not packet:
+            self.connection = None
+            msg = "PULSE transport closed"
+            raise ConnectionError(msg)
+
         opcode = packet[0] if isinstance(packet[0], int) else ord(packet[0])
         data = packet[1:]
         return opcode, data
 
     def _send_with_opcode(self, opcode, body=None):
-        assert self.connected
+        if not self.connected or self.connection is None:
+            msg = "PULSETransport is not connected"
+            raise ConnectionError(msg)
 
         data = bytes([opcode]) + (body or b"")
         self.connection.send(data)

@@ -1,10 +1,11 @@
 __author__ = "andrews"
 
 import logging
+from typing import cast
 import uuid
 from enum import IntEnum
-from typing import TYPE_CHECKING
 
+from libpebble2.communication import PebbleConnection
 from libpebble2.events.mixin import EventSourceMixin
 from libpebble2.protocol.audio import AudioStream, DataTransfer, StopTransfer
 from libpebble2.protocol.voice import (
@@ -25,21 +26,37 @@ from libpebble2.protocol.voice import (
     Word,
 )
 
-if TYPE_CHECKING:
-    from libpebble2.communication import PebbleConnection
-
 __all__ = ["SetupResult", "TranscriptionResult", "VoiceService"]
 
 logger = logging.getLogger("libpebble2.voice")
 
 
 class SetupResult(IntEnum):
+    """
+    Enumeration representing possible results of a voice setup operation.
+
+    Attributes:
+        Success (int): Indicates the setup was successful.
+        FailTimeout (int): Indicates the setup failed due to a timeout.
+        FailDisabled (int): Indicates the setup failed because the feature is disabled.
+    """
+
     Success = 0
     FailTimeout = 2
     FailDisabled = 5
 
 
 class TranscriptionResult(IntEnum):
+    """
+    Enumeration representing possible outcomes of a voice transcription operation.
+
+    Attributes:
+        Success (int): Transcription completed successfully.
+        FailNoInternet (int): Transcription failed due to lack of internet connectivity.
+        FailRecognizerError (int): Transcription failed due to an error in the speech recognizer.
+        FailSpeechNotRecognized (int): Transcription failed because speech was not recognized.
+    """
+
     Success = 0
     FailNoInternet = 1
     FailRecognizerError = 3
@@ -50,8 +67,8 @@ class VoiceService(EventSourceMixin):
     """
     Service to expose voice control to external tools.
 
-    :param pebble: The pebble with which to establish a voice session.
-    :type pebble: .PebbleConnection
+    Args:
+        pebble (PebbleConnection): The PebbleConnection over which to communicate.
     """
 
     SESSION_ID_INVALID = 0
@@ -60,7 +77,6 @@ class VoiceService(EventSourceMixin):
         self._pebble = pebble
         self._session_id = VoiceService.SESSION_ID_INVALID
         self._subscriber = None
-        self._session_id = VoiceService.SESSION_ID_INVALID
         self._encoder_info = None
         self._app_uuid = None
 
@@ -78,11 +94,12 @@ class VoiceService(EventSourceMixin):
             self._handle_session_setup(packet.flags, packet.data)
 
     def _handle_session_setup(self, flags: int, message: SessionSetupCommand) -> None:
+        attrs = cast("AttributeList", message.attributes)
         if (
             (message.session_type != SessionType.Dictation)
             or (message.session_id == VoiceService.SESSION_ID_INVALID)
-            or (message.attributes.is_empty())
-            or (message.attributes.get_attribute(AttributeType.SpeexEncoderInfo) is None)
+            or attrs.is_empty()
+            or (attrs.get_attribute(AttributeType.SpeexEncoderInfo) is None)
         ):
             return
 
@@ -90,24 +107,18 @@ class VoiceService(EventSourceMixin):
             return
 
         app_initiated = flags & Flags.AppInitiated != 0
-        app_uuid = message.attributes.get_attribute(AttributeType.AppUuid)
+        app_uuid = attrs.get_attribute(AttributeType.AppUuid)
         app_uuid_present = app_uuid is not None
         if app_initiated != app_uuid_present:
             return
 
         self._app_uuid = app_uuid.uuid if app_uuid else None
         self._session_id = message.session_id
-        self._encoder_info = message.attributes.get_attribute(
-            AttributeType.SpeexEncoderInfo,
-        )
+        self._encoder_info = attrs.get_attribute(AttributeType.SpeexEncoderInfo)
         if self._encoder_info is None:
             return
 
-        logger.debug(
-            "Received session setup message " + f"from app {self._app_uuid}"
-            if self._app_uuid
-            else "",
-        )
+        logger.debug("Received session setup message from app %s", self._app_uuid)
         self._broadcast_event("session_setup", self._app_uuid, self._encoder_info)
 
     def _handle_audio(self, packet: AudioStream) -> None:
@@ -148,10 +159,9 @@ class VoiceService(EventSourceMixin):
         """
         Send the result of setting up a dictation session requested by the watch.
 
-        :param result:  result of setting up the session
-        :type result: .SetupResult
-        :param app_uuid:uuid.UUID of app that initiated the session
-        :type app_uuid:uuid.UUID
+        Args:
+            result (SetupResult): The result of setting up the session.
+            app_uuid (uuid.UUID | None): The UUID of the app that initiated the session.
         """
         if self._session_id == VoiceService.SESSION_ID_INVALID:
             logger.debug("send_session_setup_result: no active session; ignoring")
@@ -169,11 +179,7 @@ class VoiceService(EventSourceMixin):
 
             flags |= Flags.AppInitiated
 
-        logger.debug(
-            f"Sending session setup result (result={result}, app={app_uuid})"
-            if app_uuid is not None
-            else ")",
-        )
+        logger.debug("Sending session setup result (result=%s, app=%s)", result, app_uuid)
 
         self._pebble.send_packet(
             VoiceControlResult(
@@ -194,11 +200,11 @@ class VoiceService(EventSourceMixin):
         """
         Send the result of a dictation session.
 
-        :param result: Result of the session
-        :type result: DictationResult
-        :param sentences: list of sentences, each of which is a list of words and punctuation
-        :param app_uuid: uuid.UUID of app that initiated the session
-        :type app_uuid: uuid.UUID
+        Args:
+            result (TranscriptionResult): Result of the session.
+            sentences (list[list[str]] | None): List of sentences, each of which is a list of words
+                and punctuation.
+            app_uuid (uuid.UUID | None): UUID of app that initiated the session.
         """
         if self._session_id == VoiceService.SESSION_ID_INVALID:
             logger.debug("send_dictation_result: no active session; ignoring")
@@ -235,11 +241,7 @@ class VoiceService(EventSourceMixin):
         if transcription is not None:
             attributes.append(Attribute(id=AttributeType.Transcription, data=transcription))
 
-        logger.debug(
-            f"Sending dictation result (result={result}, app={app_uuid})"
-            if app_uuid is not None
-            else ")",
-        )
+        logger.debug("Sending dictation result (result=%s, app=%s)", result, app_uuid)
         self._pebble.send_packet(
             VoiceControlResult(
                 flags=flags,

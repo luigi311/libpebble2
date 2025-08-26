@@ -15,7 +15,7 @@ def test_websocket_transport_send_and_read_watch(patch_websocket):
 
     # Reading: fabricate an inbound "from watch" frame (endpoint byte, then payload)
     endpoint = {v: k for k, v in from_watch.items()}[WebSocketRelayFromWatch]
-    patch_websocket._instance._in.append(
+    patch_websocket.instance._in.append(
         (patch_websocket.ABNF.OPCODE_BINARY, struct.pack("B", endpoint) + b"\x01\x02")
     )
     origin, payload = ws.read_packet()
@@ -25,7 +25,7 @@ def test_websocket_transport_send_and_read_watch(patch_websocket):
     # Sending to watch wraps in phone envelope internally
     ws._send_to_watch(b"\xaa")
     # First, WebsocketTransport will send to phone: endpoint byte + serialised(to_watch[RelayToWatch])
-    assert patch_websocket._instance.sent  # one message sent
+    assert patch_websocket.instance.sent  # one message sent
 
     ws.disconnect()
     assert not ws.connected

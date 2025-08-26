@@ -1,42 +1,41 @@
-import logging
 import datetime
+import logging
 
+from libpebble2.communication import PebbleConnection
 from libpebble2.events.mixin import EventSourceMixin
+from libpebble2.exceptions import TimeoutError
 from libpebble2.protocol.data_logging import (
     DataLogging,
-    DataLoggingDespoolSendData,
-    DataLoggingReportOpenSessions,
-    DataLoggingDespoolOpenSession,
     DataLoggingACK,
-    DataLoggingNACK,
+    DataLoggingDespoolOpenSession,
+    DataLoggingDespoolSendData,
     DataLoggingEmptySession,
     DataLoggingGetSendEnableRequest,
     DataLoggingGetSendEnableResponse,
+    DataLoggingNACK,
+    DataLoggingReportOpenSessions,
     DataLoggingSetSendEnable,
 )
-from libpebble2.exceptions import TimeoutError
 
 logger = logging.getLogger("libpebble2.services.data_logging")
 
 
 class DataLoggingService(EventSourceMixin):
     """
-    Supports various data logging functions
+    Supports various data logging functions.
 
-    :param pebble: The :class:`PebbleConnection` over which to communicate
-    :type pebble: .PebbleConnection
+    Args:
+        pebble (PebbleConnection): The :class:`PebbleConnection` over which to communicate
     """
 
-    def __init__(self, pebble):
+    def __init__(self, pebble: PebbleConnection) -> None:
         self._pebble = pebble
-        super(DataLoggingService, self).__init__()
+        super().__init__()
 
-    def list(self):
-        """
-        List all available data logging sessions
-        """
-
-        # We have to open this queue before we make the request, to ensure we don't miss the response.
+    def list(self) -> list:
+        """List all available data logging sessions."""
+        # We have to open this queue before we make the request, to ensure we don't miss
+        # the response.
         queue = self._pebble.get_endpoint_queue(DataLogging)
 
         self._pebble.send_packet(DataLogging(data=DataLoggingReportOpenSessions(sessions=[])))
@@ -56,13 +55,10 @@ class DataLoggingService(EventSourceMixin):
         queue.close()
         return sessions
 
-    def download(self, session_id):
-        """
-        Download a specific session.
-        Returns (session_info, data)
-        """
-
-        # We have to open this queue before we make the request, to ensure we don't miss the response.
+    def download(self, session_id: int):
+        """Download a specific session."""
+        # We have to open this queue before we make the request, to ensure we don't miss
+        # the response.
         queue = self._pebble.get_endpoint_queue(DataLogging)
 
         # First, we need to open up all sessions
@@ -88,33 +84,32 @@ class DataLoggingService(EventSourceMixin):
 
         # -----------------------------------------------------------------------------
         # Request an empty of this session
-        logger.info("Requesting empty of session {}".format(session_id))
+        logger.info("Requesting empty of session %s", session_id)
         self._pebble.send_packet(DataLogging(data=DataLoggingEmptySession(session_id=session_id)))
         data = None
         timeout_count = 0
         while True:
-            logger.debug("Looping again. Time: {}".format(datetime.datetime.now()))
+            logger.debug("Looping again. Time: %s", datetime.datetime.now(tz=datetime.UTC))
             try:
                 result = queue.get(timeout=5).data
                 timeout_count = 0
             except TimeoutError:
-                logger.debug("Got timeout error Time: {}".format(datetime.datetime.now()))
+                logger.debug("Got timeout error Time: %s", datetime.datetime.now(tz=datetime.UTC))
                 timeout_count += 1
                 if timeout_count >= 2:
                     break
-                else:
-                    self._pebble.send_packet(
-                        DataLogging(data=DataLoggingEmptySession(session_id=session_id))
-                    )
-                    continue
+                self._pebble.send_packet(
+                    DataLogging(data=DataLoggingEmptySession(session_id=session_id)),
+                )
+                continue
 
             if isinstance(result, DataLoggingDespoolSendData):
                 if result.session_id != session_id:
                     self._pebble.send_packet(
-                        DataLogging(data=DataLoggingNACK(session_id=result.session_id))
+                        DataLogging(data=DataLoggingNACK(session_id=result.session_id)),
                     )
                 else:
-                    logger.info("Received {} bytes of data: {}".format(len(result.data), result))
+                    logger.info("Received %s bytes of data: %s", len(result.data), result)
                     if data is None:
                         data = result.data
                     else:
@@ -126,27 +121,21 @@ class DataLoggingService(EventSourceMixin):
         queue.close()
         return (session, data)
 
-    def get_send_enable(self):
-        """
-        Return true if sending of sessions is enabled on the watch
-        """
-
-        # We have to open this queue before we make the request, to ensure we don't miss the response.
+    def get_send_enable(self) -> bool:
+        """Return true if sending of sessions is enabled on the watch."""
+        # We have to open this queue before we make the request, to ensure we don't miss
+        # the response.
         queue = self._pebble.get_endpoint_queue(DataLogging)
+        try:
+            self._pebble.send_packet(DataLogging(data=DataLoggingGetSendEnableRequest()))
+            while True:
+                msg = queue.get(timeout=5).data
+                if isinstance(msg, DataLoggingGetSendEnableResponse):
+                    return msg.enabled
+        finally:
+            queue.close()
 
-        self._pebble.send_packet(DataLogging(data=DataLoggingGetSendEnableRequest()))
-        enabled = False
-        while True:
-            result = queue.get().data
-            if isinstance(result, DataLoggingGetSendEnableResponse):
-                enabled = result.enabled
-                break
 
-        queue.close()
-        return enabled
-
-    def set_send_enable(self, setting):
-        """
-        Set the send enable setting on the watch
-        """
-        self._pebble.send_packet(DataLogging(data=DataLoggingSetSendEnable(enabled=setting)))
+    def set_send_enable(self, enabled: bool) -> None:
+        """Set whether sending of sessions is enabled on the watch."""
+        self._pebble.send_packet(DataLogging(data=DataLoggingSetSendEnable(enabled=enabled)))

@@ -1,8 +1,18 @@
 __author__ = "katharine"
-from .version import __version__, __version_info__
-
 import logging
 
-from .exceptions import *
+from .exceptions import (
+    AppInstallError,
+    ConnectionError,
+    GetBytesError,
+    IncompleteMessage,
+    PacketDecodeError,
+    PacketEncodeError,
+    PebbleError,
+    PutBytesError,
+    ScreenshotError,
+    TimeoutError,
+)
+from .version import __version__, __version_info__
 
 logging.getLogger("libpebble2").addHandler(logging.NullHandler())

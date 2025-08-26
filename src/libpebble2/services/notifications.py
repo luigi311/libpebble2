@@ -1,67 +1,85 @@
+from libpebble2.communication import PebbleConnection
 from libpebble2.protocol.legacy2 import LegacyNotification
 from libpebble2.protocol.timeline import TimelineAction, TimelineAttribute, TimelineItem
 
 __author__ = "katharine"
 
-from libpebble2.protocol.blobdb import BlobDatabaseID
-from libpebble2.services.blobdb import BlobDBClient, SyncWrapper
-
 import struct
 import time
 import uuid
 
+from libpebble2.protocol.blobdb import BlobDatabaseID
+
+from .blobdb import BlobDBClient, SyncWrapper
 
 NotificationSource = LegacyNotification.Source
 
 
-class Notifications(object):
+class Notifications:
     """
     Sends notifications.
 
     .. note:
-       If a :class:`BlobDBClient` already exists for the given :class:`PebbleConnection`, you should pass that in here
-       to avoid conflicts.
+       If a :class:`BlobDBClient` already exists for the given :class:`PebbleConnection`, you should
+       pass that in here to avoid conflicts.
 
-    :param pebble: The Pebble to send a notification to.
-    :type pebble: .PebbleConnection
-    :param blobdb: An existing :class:`BlobDBClient`, if any. If necessary, one will be created.
+    Args:
+        pebble (PebbleConnection): The Pebble to send a notification to.
+        blobdb (BlobDBClient, optional): An existing :class:`BlobDBClient`,
+            if any. If necessary, one will be created.
     """
 
-    def __init__(self, pebble, blobdb=None):
+    def __init__(self, pebble: PebbleConnection, blobdb: BlobDBClient | None = None) -> None:
         self._pebble = pebble
         self._blobdb = blobdb or BlobDBClient(pebble)
 
-    def send_notification(self, subject="", message="", sender="", source=None, actions=None):
+    def send_notification(
+        self,
+        subject: str,
+        message: str,
+        sender: str,
+        source: NotificationSource | None = None,
+        actions: list[TimelineAction] | None = None,
+    ) -> None:
         """
         Sends a notification. Blocks as long as necessary.
 
-        :param subject: The subject.
-        :type subject: str
-        :param message: The message.
-        :type message: str
-        :param sender: The sender.
-        :type sender: str
-        :param source: The source of the notification
-        :type source: .LegacyNotification.Source
-        :param actions Actions to be sent with a notification (list of TimelineAction objects)
-        :type actions list
+        Args:
+            subject (str): The subject of the notification.
+            message (str): The message content of the notification.
+            sender (str): The sender of the notification.
+            source (LegacyNotification.Source, optional): The source of the notification.
+            actions (list[TimelineAction], optional): Actions to be sent with the notification.
         """
         if self._pebble.firmware_version.major < 3:
             self._send_legacy_notification(subject, message, sender, source)
         else:
             self._send_modern_notification(subject, message, sender, source, actions)
 
-    def _send_legacy_notification(self, subject, message, sender, source):
+    def _send_legacy_notification(
+        self,
+        subject: str,
+        message: str,
+        sender: str,
+        source: NotificationSource | None,
+    ) -> None:
         if source is None:
             source = LegacyNotification.Source.SMS
         ts = str(int(time.time() * 1000))
         self._pebble.send_packet(
             LegacyNotification(
                 type=source, timestamp=ts, subject=subject, body=message, sender=sender
-            )
+            ),
         )
 
-    def _send_modern_notification(self, subject, message, sender, source, additional_actions):
+    def _send_modern_notification(
+        self,
+        subject: str,
+        message: str,
+        sender: str,
+        source: NotificationSource | None,
+        additional_actions: list[TimelineAction] | None,
+    ) -> None:
         source_map = {
             None: 1,
             NotificationSource.Email: 19,

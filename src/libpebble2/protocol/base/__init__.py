@@ -1,25 +1,37 @@
-from __future__ import print_function, absolute_import
-
 __author__ = "katharine"
 
-from binascii import hexlify
 import collections
 import logging
 import struct
+from binascii import hexlify
+from typing import Self
 
 from libpebble2.exceptions import IncompleteMessage
-from .types import Field, DEFAULT_ENDIANNESS
+
+from .types import DEFAULT_ENDIANNESS, Field
 
 __all__ = ["PebblePacket"]
 
 logger = logging.getLogger("libpebble2.protocol")
 
-_PacketRegistry = {}
+_PacketRegistry: dict[int, type["PebblePacket"]] = {}
 
 
-def make_output(thing):
-    class C(object):
-        def __repr__(self):
+def make_output(thing: str) -> object:
+    """
+    Creates and returns an instance of a dynamically defined class whose __repr__ method returns
+    the provided string.
+
+    Args:
+        thing (str): The string to be returned by the __repr__ method of the generated class
+        instance.
+
+    Returns:
+        object: An instance of a class with a custom __repr__ method.
+    """
+
+    class C:
+        def __repr__(self) -> str:
             return thing
 
     return C()
@@ -27,15 +39,19 @@ def make_output(thing):
 
 class PacketType(type):
     """
-    Metaclass for :class:`PebblePacket` that transforms properties that are subclasses of :class:`Field` into a
-    Pebble Protocol parser.
+    Metaclass for :class:`PebblePacket` that transforms properties that are subclasses of
+    :class:`Field` into a Pebble Protocol parser.
     """
 
-    def __new__(mcs, name, bases, dct):
+    def __new__(
+        mcs,
+        name: str,
+        bases: tuple,
+        dct: dict,
+    ) -> type:
         mapping = []
         # If we have a _Meta property, delete it.
-        if "_Meta" in dct:
-            del dct["_Meta"]
+        dct.pop("_Meta", None)
         # If we have a Meta property, move it to _Meta. This effectively prevents it being inherited.
         if "Meta" in dct:
             dct["_Meta"] = dct["Meta"].__dict__
@@ -47,7 +63,7 @@ class PacketType(type):
         dct["_type_mapping"] = collections.OrderedDict()
         for base in bases:
             if hasattr(base, "_type_mapping"):
-                dct["_type_mapping"].update(getattr(base, "_type_mapping"))
+                dct["_type_mapping"].update(base._type_mapping)
         for k, v in dct.items():
             if not isinstance(v, Field):
                 continue
@@ -59,38 +75,39 @@ class PacketType(type):
         dct["_type_mapping"].update(
             collections.OrderedDict(sorted(mapping, key=lambda x: x[1].field_id))
         )
-        return super(PacketType, mcs).__new__(mcs, name, bases, dct)
+        return super().__new__(mcs, name, bases, dct)
 
-    def __init__(cls, name, bases, dct):
+    def __init__(cls, name: str, bases: tuple, dct: dict) -> None:
         # At this point we actually have a references to the class, so we can register it
         # in our packet type registry for later decoding.
-        if hasattr(cls, "_Meta"):
-            if "endpoint" in cls._Meta and cls._Meta.get("register", True):
-                _PacketRegistry[cls._Meta["endpoint"]] = cls
+        if hasattr(cls, "_Meta") and "endpoint" in cls._Meta and cls._Meta.get("register", True):
+            _PacketRegistry[cls._Meta["endpoint"]] = cls
         # Fill in all of the fields with a reference to this class.
         # TODO: This isn't used any more; remove it?
-        for k, v in cls._type_mapping.items():
+        for v in cls._type_mapping.values():
             v._parent = cls
-        super(PacketType, cls).__init__(name, bases, dct)
+        super().__init__(name, bases, dct)
 
-    def __repr__(self):
-        return self.__name__
+    def __repr__(cls) -> str:
+        return cls.__name__
 
 
 class PebblePacket(metaclass=PacketType):
     r"""
     Represents some sort of Pebble Protocol message.
 
-    A PebblePacket can have an inner class named ``Meta`` containing some information about the property:
+    A PebblePacket can have an inner class named ``Meta`` containing some information about the
+    property:
 
-    ==================  ===============================================================================================
+    ==================  ============================================================================
     **endpoint**        The Pebble Protocol endpoint that is represented by this message.
-    **endianness**      The endianness of the packet. The default endianness is big-endian, but it can be overridden by
-                        packets and fields, with the priority:
-    **register**        If set to ``False``, the packet will not be registered and thus will be ignored by
-                        :meth:`parse_message`. This is useful when messages are ambiguous, and distinguished only by
-                        whether they are sent to or from the Pebble.
-    ==================  ===============================================================================================
+    **endianness**      The endianness of the packet. The default endianness is big-endian, but it
+                        can be overridden by packets and fields, with the priority:
+    **register**        If set to ``False``, the packet will not be registered and thus will be
+                        ignored by :meth:`parse_message`. This is useful when messages are
+                        ambiguous, and distinguished only by whether they are sent to or from
+                        the Pebble.
+    ==================  ============================================================================
 
     A sample packet might look like this: ::
 
@@ -103,26 +120,30 @@ class PebblePacket(metaclass=PacketType):
            command = Uint8(default=0x01)
            response = Uint8(enum=AppFetchStatus)
 
-    :param **kwargs: Initial values for any properties on the object.
+    Args:
+        **kwargs (object): Initial values for any properties on the object.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: object) -> None:
         for k, v in kwargs.items():
             if k.startswith("_"):
-                raise AttributeError("You cannot set internal properties during construction.")
+                msg = "You cannot set internal properties during construction."
+                raise AttributeError(msg)
             getattr(self, k)  # Throws an exception if the property doesn't exist.
             setattr(self, k, v)
 
-    def serialise(self, default_endianness=None):
+    def serialise(self, default_endianness: str | None = None) -> bytes:
         """
         Serialise a message, without including any framing.
 
-        :param default_endianness: The default endianness, unless overridden by the fields or class metadata.
-                                   Should usually be left at ``None``. Otherwise, use ``'<'`` for little endian and
-                                   ``'>'`` for big endian.
-        :type default_endianness: str
-        :return: The serialised message.
-        :rtype: bytes
+        Args:
+            default_endianness (str | None): The default endianness, unless overridden by the
+                fields or class metadata. Should usually be left at ``None``. Otherwise,
+                use ``'<'`` for little endian and ``'>'`` for big endian.
+
+        Returns:
+            bytes: The serialised message.
+
         """
         # Figure out an endianness.
         endianness = default_endianness or DEFAULT_ENDIANNESS
@@ -130,7 +151,7 @@ class PebblePacket(metaclass=PacketType):
             endianness = self._Meta.get("endianness", endianness)
 
         inferred_fields = set()
-        for k, v in self._type_mapping.items():
+        for v in self._type_mapping.values():
             inferred_fields |= {x._name for x in v.dependent_fields()}
         for field in inferred_fields:
             setattr(self, field, None)
@@ -144,31 +165,38 @@ class PebblePacket(metaclass=PacketType):
             message += v.value_to_bytes(self, getattr(self, k), default_endianness=endianness)
         return message
 
-    def serialise_packet(self):
+    def serialise_packet(self) -> bytes:
         """
-        Serialise a message, including framing information inferred from the ``Meta`` inner class of the packet.
-        ``self.Meta.endpoint`` must be defined to call this method.
+        Serialise a message, including framing information inferred from the ``Meta`` inner class
+        of the packet. ``self.Meta.endpoint`` must be defined to call this method.
 
-        :return: A serialised message, ready to be sent to the Pebble.
+        Returns:
+            bytes: A serialised message, ready to be sent to the Pebble.
         """
         if not hasattr(self, "_Meta"):
-            raise ReferenceError("Can't serialise a packet that doesn't have an endpoint ID.")
+            msg = "Can't serialise a packet that doesn't have an endpoint ID."
+            raise ReferenceError(msg)
         serialised = self.serialise()
         return struct.pack("!HH", len(serialised), self._Meta["endpoint"]) + serialised
 
     @classmethod
-    def parse_message(cls, message):
+    def parse_message(cls, message: bytes) -> tuple["PebblePacket | None", int]:
         """
-        Parses a message received from the Pebble. Uses Pebble Protocol framing to figure out what sort of packet
-        it is. If the packet is registered (has been defined and imported), returns the deserialised packet, which will
-        not necessarily be the same class as this. Otherwise returns ``None``.
+        Parses a message received from the Pebble. Uses Pebble Protocol framing to figure out what
+        sort of packet it is. If the packet is registered (has been defined and imported),
+        returns the deserialised packet, which will not necessarily be the same class as this.
+        Otherwise returns ``None``.
 
         Also returns the length of the message consumed during deserialisation.
 
-        :param message: A serialised message received from the Pebble.
-        :type message: bytes
-        :return: ``(decoded_message, decoded length)``
-        :rtype: (:class:`PebblePacket`, :any:`int`)
+        Args:
+            message (bytes): A serialised message received from the Pebble.
+
+        Returns:
+            tuple(object | None, int): ``(decoded_message, decoded length)``
+
+        Raises:
+            IncompleteMessage: If the message is too short to contain a complete packet.
         """
         length = struct.unpack_from("!H", message, 0)[0] + 4
         if len(message) < length:
@@ -176,23 +204,31 @@ class PebblePacket(metaclass=PacketType):
         (command,) = struct.unpack_from("!H", message, 2)
         if command in _PacketRegistry:
             return _PacketRegistry[command].parse(message[4:length])[0], length
-        else:
-            return None, length
+
+        return None, length
 
     @classmethod
-    def parse(cls, message, default_endianness=DEFAULT_ENDIANNESS):
+    def parse(
+        cls,
+        message: bytes,
+        default_endianness: str = DEFAULT_ENDIANNESS,
+    ) -> tuple[Self, int]:
         """
-        Parses a message without any framing, returning the decoded result and length of message consumed. The result
-        will always be of the same class as :meth:`parse` was called on. If the message is invalid,
-        :exc:`.PacketDecodeError` will be raised.
+        Parses a message without any framing, returning the decoded result and length of message
+        consumed. The result will always be of the same class as :meth:`parse` was called on.
 
-        :param message: The message to decode.
-        :type message: bytes
-        :param default_endianness: The default endianness, unless overridden by the fields or class metadata.
-                                   Should usually be left at ``None``. Otherwise, use ``'<'`` for little endian and
-                                   ``'>'`` for big endian.
-        :return: ``(decoded_message, decoded length)``
-        :rtype: (:class:`PebblePacket`, :any:`int`)
+        Args:
+            message (bytes): A serialised message received from the Pebble.
+            default_endianness (str): The default endianness, unless overridden by the fields
+                or class metadata. Should usually be left at ``None``. Otherwise, use ``'<'``
+                for little endian and ``'>'`` for big endian.
+
+        Returns:
+            tuple(PebblePacket, int): ``(decoded_message, decoded length)``
+
+        Raises:
+            IncompleteMessage: If the message is too short to contain a complete packet.
+            ValueError: If the message is not a valid Pebble packet.
         """
         obj = cls()
         offset = 0
@@ -204,42 +240,38 @@ class PebblePacket(metaclass=PacketType):
                     obj, message, offset, default_endianness=default_endianness
                 )
             except Exception:
-                logger.warning("Exception decoding {}.{}".format(cls.__name__, k))
+                logger.warning("Exception decoding %s.%s", cls.__name__, k)
                 raise
             offset += length
             setattr(obj, k, value)
         return obj, offset
 
-    def __repr__(self):
-        return "%s(%s)" % (
+    def __repr__(self) -> str:
+        return "{}({})".format(
             type(self).__name__,
-            ", ".join(
-                "%s=%s" % (k, self._format_repr(getattr(self, k)))
-                for k in self._type_mapping.keys()
-            ),
+            ", ".join(f"{k}={self._format_repr(getattr(self, k))}" for k in self._type_mapping),
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, PebblePacket):
-            return NotImplemented
-
-        if type(self) != type(other):
             return False
 
-        for k in self._type_mapping:
-            if getattr(self, k) != getattr(other, k):
-                return False
+        if type(self) is not type(other):
+            return False
 
-        return True
+        return all(getattr(self, k) == getattr(other, k) for k in self._type_mapping)
 
-    def __ne__(self, other):
+    # Make value-equal packets unhashable to avoid broken hashing on mutable/list fields.
+    __hash__ = None
+
+    def __ne__(self, other: object) -> bool:
         return not (self == other)
 
-    def _format_repr(self, value):
+    def _format_repr(self, value: object) -> object:
         if isinstance(value, bytes):
             if len(value) < 20:
                 return hexlify(value).decode()
-            else:
-                return hexlify(value[:17]).decode() + "..."
-        else:
-            return value
+
+            return hexlify(value[:17]).decode() + "..."
+
+        return value

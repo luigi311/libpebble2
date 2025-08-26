@@ -141,10 +141,11 @@ def fake_pebble():
 @pytest.fixture
 def patch_websocket(monkeypatch):
     """Provide a fake websocket module before importing transport."""
-    fake = types.SimpleNamespace(
-        WebSocketException=Exception,
-        ABNF=types.SimpleNamespace(OPCODE_BINARY=2, OPCODE_CLOSE=8),
-    )
+    import types
+
+    fake = types.ModuleType("websocket")
+    setattr(fake, "WebSocketException", Exception)
+    setattr(fake, "ABNF", types.SimpleNamespace(OPCODE_BINARY=2, OPCODE_CLOSE=8))
 
     class _WS:
         def __init__(self):
@@ -163,12 +164,12 @@ def patch_websocket(monkeypatch):
         def close(self):
             self.connected = False
 
-    fake._instance = _WS()
+    setattr(fake, "instance", _WS())
 
     def create_connection(url):
-        return fake._instance
+        return fake.instance
 
-    fake.create_connection = create_connection
+    setattr(fake, "create_connection", create_connection)
     sys.modules["websocket"] = fake
     return fake
 

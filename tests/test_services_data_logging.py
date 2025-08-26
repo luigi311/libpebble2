@@ -41,6 +41,7 @@ def test_data_logging_download(fake_pebble):
     fake_pebble.queue_for(DataLogging, [wrap(s1), wrap(s2), wrap(d7a), wrap(d8), wrap(d7b)])
     svc = DataLoggingService(fake_pebble)
     session, data = svc.download(7)
+    assert session is not None
     assert session.session_id == 7
     if data is not None:
         assert data == b"abcd"

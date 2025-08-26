@@ -1,30 +1,33 @@
 __author__ = "katharine"
 
-from libpebble2.protocol.blobdb import BlobDatabaseID
-from .blobdb import BlobDBClient, SyncWrapper, BlobStatus
-from .putbytes import PutBytes, PutBytesType
+from libpebble2.communication import PebbleConnection
 from libpebble2.events.mixin import EventSourceMixin
 from libpebble2.exceptions import AppInstallError
 from libpebble2.protocol.apps import (
-    AppMetadata,
-    AppRunState,
-    AppRunStateStart,
     AppFetchRequest,
     AppFetchResponse,
     AppFetchStatus,
+    AppMetadata,
+    AppRunState,
+    AppRunStateStart,
 )
+from libpebble2.protocol.blobdb import BlobDatabaseID
 from libpebble2.protocol.legacy2 import (
+    LegacyAppAvailable,
     LegacyAppInstallRequest,
     LegacyAppInstallResponse,
-    LegacyUpgradeAppUUID,
+    LegacyAppLaunchMessage,
+    LegacyBankEntry,
     LegacyBankInfoRequest,
     LegacyBankInfoResponse,
-    LegacyBankEntry,
-    LegacyAppAvailable,
-    LegacyAppLaunchMessage,
+    LegacyUpgradeAppUUID,
 )
-from libpebble2.services.appmessage import AppMessageService, Uint8 as AMUint8
+from libpebble2.services.appmessage import AppMessageService
+from libpebble2.services.appmessage import Uint8 as AMUint8
 from libpebble2.util.bundle import PebbleBundle
+
+from .blobdb import BlobDBClient, BlobStatus, SyncWrapper
+from .putbytes import PutBytes, PutBytesType
 
 __all__ = ["AppInstaller"]
 
@@ -34,61 +37,88 @@ class AppInstaller(EventSourceMixin):
     Installs an app on the Pebble via Pebble Protocol.
 
     .. note:
-       If you use a :class:`BlobDBClient` in use elsewhere, pass it in here. If none is passed it will create one,
-       and they will conflict.
+       If you use a :class:`BlobDBClient` in use elsewhere, pass it in here. If none is passed
+       it will create one, and they will conflict.
 
-    :param pebble: The :class:`PebbleConnection` over which to install the app.
-    :type pebble: .PebbleConnection
-    :param pbw_path: The path to the PBW file to be installed on the filesystem.
-    :type pbw_path: str
-    :param blobdb_client: An optional :class:`BlobDBClient` to use, if one already exists. If omitted, one will be
-                          created.
-    :type blobdb_client: .BlobDBClient
+    Args:
+        pebble (PebbleConnection): The connection over which to install the app.
+        pbw_path (str): The path to the PBW file to be installed on the filesystem.
+        blobdb_client (BlobDBClient, optional): An optional BlobDBClient to use,
+            if one already exists. If omitted, one will be created.
     """
 
-    def __init__(self, pebble, pbw_path, blobdb_client=None):
+    def __init__(
+        self,
+        pebble: PebbleConnection,
+        pbw_path: str,
+        blobdb_client: BlobDBClient | None = None,
+    ) -> None:
         self._pebble = pebble
         self._blobdb = blobdb_client or BlobDBClient(pebble)
         EventSourceMixin.__init__(self)
         #: Total number of bytes sent so far.
         self.total_sent = 0
         #: Total number of bytes to send.
-        self.total_size = None
+        self.total_size: int = 0
         self._prepare(pbw_path)
 
-    def _prepare(self, pbw_path):
+    def _prepare(self, pbw_path: str) -> None:
+        if self._pebble.watch_info is None or not self._pebble.watch_info.running:
+            msg = "Watch info not available; cannot install app."
+            raise AppInstallError(msg)
+
         self._bundle = PebbleBundle(
-            pbw_path, hardware=self._pebble.watch_info.running.hardware_platform
+            pbw_path,
+            hardware=self._pebble.watch_info.running.hardware_platform,
         )
         if not self._bundle.is_app_bundle:
-            raise AppInstallError("This is not an app bundle.")
+            msg = "This is not an app bundle."
+            raise AppInstallError(msg)
 
-        self.total_size = self._bundle.zip.getinfo(self._bundle.get_app_path()).file_size
+        app_path = self._bundle.get_app_path()
+        if app_path is None:
+            msg = "Bundle is missing the app binary path."
+            raise AppInstallError(msg)
+        self.total_size += self._bundle.zip.getinfo(app_path).file_size
+
         if self._bundle.has_resources:
-            self.total_size += self._bundle.zip.getinfo(self._bundle.get_resource_path()).file_size
+            res_path = self._bundle.get_resource_path()
+            if res_path is None:
+                msg = "Bundle declares resources but none were found."
+                raise AppInstallError(msg)
+            self.total_size += self._bundle.zip.getinfo(res_path).file_size
 
         if self._bundle.has_worker:
-            self.total_size += self._bundle.zip.getinfo(self._bundle.get_worker_path()).file_size
+            worker_path = self._bundle.get_worker_path()
+            if worker_path is None:
+                msg = "Bundle declares a worker but none was found."
+                raise AppInstallError(msg)
+            self.total_size += self._bundle.zip.getinfo(worker_path).file_size
 
-    def install(self, force_install=False):
+    def install(self, force_install: bool = False) -> None:
         """
-        Installs an app. Blocks until the installation is complete, or raises :exc:`AppInstallError` if it fails.
+        Installs an app. Blocks until the installation is complete.
 
-        While this method runs, "progress" events will be emitted regularly with the following signature: ::
-
+        While this method runs, "progress" events will be emitted regularly with the following
+        signature: ::
            (sent_this_interval, sent_total, total_size)
 
-        :param force_install: Install even if installing this pbw on this platform is usually forbidden.
-        :type force_install: bool
+        Args:
+            force_install (bool): Install even if installing this pbw on this platform is usually
+                forbidden (default is ``False``).
+
+        Raises:
+            AppInstallError: If the installation fails for any reason.
         """
         if not (force_install or self._bundle.should_permit_install()):
-            raise AppInstallError("This pbw is not supported on this platform.")
+            msg = "This pbw is not supported on this platform."
+            raise AppInstallError(msg)
         if self._pebble.firmware_version.major < 3:
             self._install_legacy2()
         else:
             self._install_modern()
 
-    def _install_modern(self):
+    def _install_modern(self) -> None:
         metadata = self._bundle.get_app_metadata()
         app_uuid = metadata["uuid"]
         blob_packet = AppMetadata(
@@ -108,7 +138,8 @@ class AppInstaller(EventSourceMixin):
             self._blobdb.insert, BlobDatabaseID.App, app_uuid, blob_packet.serialise()
         ).wait()
         if result != BlobStatus.Success:
-            raise AppInstallError("BlobDB error: {!s}".format(result))
+            msg = f"BlobDB error: {result!s}"
+            raise AppInstallError(msg)
 
         # Start the app.
         app_fetch = self._pebble.send_and_read(
@@ -116,31 +147,39 @@ class AppInstaller(EventSourceMixin):
         )
         if app_fetch.uuid != app_uuid:
             self._pebble.send_packet(AppFetchResponse(response=AppFetchStatus.InvalidUUID))
-            raise AppInstallError(
-                "App requested the wrong UUID! Asked for {}; expected {}".format(
-                    app_fetch.uuid, app_uuid
-                )
-            )
+            msg = f"App requested the wrong UUID! Asked for {app_fetch.uuid}; expected {app_uuid}"
+            raise AppInstallError(msg)
         self._broadcast_event("progress", 0, self.total_sent, self.total_size)
 
-        # Send the app over
-        binary = self._bundle.zip.read(self._bundle.get_app_path())
+        app_path = self._bundle.get_app_path()
+        if app_path is None:
+            msg = "Bundle is missing the app binary path."
+            raise AppInstallError(msg)
+        binary = self._bundle.zip.read(app_path)
         self._send_part(PutBytesType.Binary, binary, app_fetch.app_id)
 
         if self._bundle.has_resources:
-            resources = self._bundle.zip.read(self._bundle.get_resource_path())
+            res_path = self._bundle.get_resource_path()
+            if res_path is None:
+                msg = "Bundle declares resources but none were found."
+                raise AppInstallError(msg)
+            resources = self._bundle.zip.read(res_path)
             self._send_part(PutBytesType.Resources, resources, app_fetch.app_id)
 
         if self._bundle.has_worker:
-            worker = self._bundle.zip.read(self._bundle.get_worker_path())
+            worker_path = self._bundle.get_worker_path()
+            if worker_path is None:
+                msg = "Bundle declares a worker but none was found."
+                raise AppInstallError(msg)
+            worker = self._bundle.zip.read(worker_path)
             self._send_part(PutBytesType.Worker, worker, app_fetch.app_id)
 
-    def _send_part(self, type, object, install_id):
+    def _send_part(self, type: PutBytesType, object: bytes, install_id: int) -> None:
         pb = PutBytes(self._pebble, type, object, app_install_id=install_id)
         pb.register_handler("progress", self._handle_progress)
         pb.send()
 
-    def _install_legacy2(self):
+    def _install_legacy2(self) -> None:
         metadata = self._bundle.get_app_metadata()
         app_uuid = metadata["uuid"]
 
@@ -155,25 +194,44 @@ class AppInstaller(EventSourceMixin):
             LegacyAppInstallRequest(data=LegacyBankInfoRequest()),
             LegacyAppInstallResponse,
         ).data
-        assert isinstance(result, LegacyBankInfoResponse)
+
+        if not isinstance(result, LegacyBankInfoResponse):
+            msg = "Did not receive bank info response."
+            raise AppInstallError(msg)
+
         first_free = 0
         for app in result.apps:
-            assert isinstance(app, LegacyBankEntry)
+            if not isinstance(app, LegacyBankEntry):
+                continue
             if app.bank_number == first_free:
                 first_free += 1
         if first_free == result.bank_count:
-            raise AppInstallError("No app banks free.")
+            msg = "No app banks free."
+            raise AppInstallError(msg)
+        self._broadcast_event("progress", 0, self.total_sent, self.total_size)
 
-        # Send the app over
-        binary = self._bundle.zip.read(self._bundle.get_app_path())
+        app_path = self._bundle.get_app_path()
+        if app_path is None:
+            msg = "Bundle is missing the app binary path."
+            raise AppInstallError(msg)
+
+        binary = self._bundle.zip.read(app_path)
         self._send_part_legacy2(PutBytesType.Binary, binary, first_free)
 
         if self._bundle.has_resources:
-            resources = self._bundle.zip.read(self._bundle.get_resource_path())
+            res_path = self._bundle.get_resource_path()
+            if res_path is None:
+                msg = "Bundle declares resources but none were found."
+                raise AppInstallError(msg)
+            resources = self._bundle.zip.read(res_path)
             self._send_part_legacy2(PutBytesType.Resources, resources, first_free)
 
         if self._bundle.has_worker:
-            worker = self._bundle.zip.read(self._bundle.get_worker_path())
+            worker_path = self._bundle.get_worker_path()
+            if worker_path is None:
+                msg = "Bundle declares a worker but none was found."
+                raise AppInstallError(msg)
+            worker = self._bundle.zip.read(worker_path)
             self._send_part_legacy2(PutBytesType.Worker, worker, first_free)
 
         # Mark it as available
@@ -190,11 +248,11 @@ class AppInstaller(EventSourceMixin):
         )
         appmessage.shutdown()
 
-    def _send_part_legacy2(self, type, object, bank):
+    def _send_part_legacy2(self, type: PutBytesType, object: bytes, bank: int) -> None:
         pb = PutBytes(self._pebble, type, object, bank=bank)
         pb.register_handler("progress", self._handle_progress)
         pb.send()
 
-    def _handle_progress(self, sent, total_sent, total_length):
+    def _handle_progress(self, sent: int, total_sent: int, total_length: int) -> None:
         self.total_sent += sent
         self._broadcast_event("progress", sent, self.total_sent, self.total_size)

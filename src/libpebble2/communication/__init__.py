@@ -4,9 +4,12 @@ import logging
 import struct
 import threading
 from binascii import hexlify
-from collections import namedtuple
+from collections.abc import Callable
 from enum import Enum
+from types import TracebackType
+from typing import NamedTuple, TypeVar
 
+from libpebble2.events import BaseEventQueue
 from libpebble2.events.threaded import ThreadedEventHandler
 from libpebble2.exceptions import ConnectionError, IncompleteMessage, PacketDecodeError
 from libpebble2.protocol.base import PebblePacket
@@ -18,45 +21,62 @@ from libpebble2.protocol.system import (
     WatchModel,
     WatchVersion,
     WatchVersionRequest,
+    WatchVersionResponse,
 )
 from libpebble2.util.hardware import PebbleHardware
 
-from .transports import BaseTransport, MessageTargetWatch
+from .transports import BaseTransport, MessageTarget, MessageTargetWatch
 
 logger = logging.getLogger("libpebble2.communication")
 
 _EventType = Enum("_EventType", ("Watch", "Transport"))
 
-FirmwareVersion = namedtuple("FirmwareVersion", ("major", "minor", "patch", "suffix"))
-"""
-Represents a firmware version, in the format ``major.minor.patch-suffix``.
-"""
+class FirmwareVersion(NamedTuple):
+    """Firmware version information."""
+    major: int
+    minor: int
+    patch: int
+    suffix: str
+
+T_Packet = TypeVar("T_Packet", bound=PebblePacket)
 
 
-class PebbleConnection(object):
+class PebbleConnection:
     """
-    PebbleConnection represents the connection to a pebble; all interaction with a pebble goes through it.
+    PebbleConnection represents the connection to a pebble; all interaction with a pebble goes
+    through it.
 
     :param transport: The underlying transport layer to communicate with the Pebble.
     :type transport: BaseTransport
-    :param log_packet_level: If not None, the log level at which to log decoded messages sent and received.
+    :param log_packet_level: If not None, the log level at which to log decoded messages sent
+        and received.
     :type log_packet_level: int
-    :param log_protocol_level: int If not None, the log level at which to log raw messages sent and received.
+    :param log_protocol_level: int If not None, the log level at which to log raw messages sent
+        and received.
     :type log_protocol_level: int
     """
 
-    def __init__(self, transport, log_protocol_level=None, log_packet_level=None):
-        assert isinstance(transport, BaseTransport)
+    def __init__(
+        self,
+        transport: BaseTransport,
+        log_protocol_level: int | None = None,
+        log_packet_level: int | None = None,
+    ) -> None:
+        # assert isinstance(transport, BaseTransport)
+        if not isinstance(transport, BaseTransport):
+            msg = "transport must be a BaseTransport"
+            raise TypeError(msg)
+
         self.transport = transport
         self.pending_bytes = b""
         self.event_handler = ThreadedEventHandler()
         self._register_internal_handlers()
-        self._watch_info = None
+        self._watch_info: WatchVersionResponse | None = None
         self._watch_model = None
         self.log_protocol_level = log_protocol_level
         self.log_packet_level = log_packet_level
 
-    def connect(self):
+    def connect(self) -> None:
         """
         Synchronously initialises a connection to the Pebble. Once it returns, a valid connection
         will be open.
@@ -64,17 +84,18 @@ class PebbleConnection(object):
         self.transport.connect()
 
     @property
-    def connected(self):
+    def connected(self) -> bool:
         """:return: ``True`` if currently connected to a Pebble; otherwise ``False``."""
         return self.transport.connected
 
-    def pump_reader(self):
+    def pump_reader(self) -> None:
         """
         Synchronously reads one message from the watch, blocking until a message is available.
         All events caused by the message read will be processed before this method returns.
 
         .. note::
-           You usually don't need to invoke this method manually; instead, see :meth:`run_sync` and :meth:`run_async`.
+           You usually don't need to invoke this method manually; instead, see :meth:`run_sync`
+           and :meth:`run_async`.
         """
         origin, message = self.transport.read_packet()
         if isinstance(origin, MessageTargetWatch):
@@ -82,10 +103,10 @@ class PebbleConnection(object):
         else:
             self._broadcast_transport_message(origin, message)
 
-    def run_sync(self):
+    def run_sync(self) -> None:
         """
-        Runs the message loop until the Pebble disconnects. This method will block until the watch disconnects or
-        a fatal error occurs.
+        Runs the message loop until the Pebble disconnects. This method will block until the watch
+        disconnects or a fatal error occurs.
 
         For alternatives that don't block forever, see :meth:`pump_reader` and :meth:`run_async`.
         """
@@ -97,10 +118,11 @@ class PebbleConnection(object):
             except ConnectionError:
                 break
 
-    def run_async(self):
+    def run_async(self) -> None:
         """
         Spawns a new thread that runs the message loop until the Pebble disconnects.
-        ``run_async`` will call :meth:`fetch_watch_info` on your behalf, and block until it receives a response.
+        ``run_async`` will call :meth:`fetch_watch_info` on your behalf, and block until it
+        receives a response.
         """
         # If called prior to connecting, do so now.
         if not self.connected:
@@ -109,13 +131,21 @@ class PebbleConnection(object):
         thread.start()
         self.fetch_watch_info()
 
-    def _handle_watch_message(self, message):
+    def _handle_watch_message(self, message: bytes | PebblePacket) -> None:
         """
         Processes a binary message received from the watch and broadcasts the relevant events.
 
         :param message: A raw message from the watch, without any transport framing.
         :type message: bytes
         """
+        if isinstance(message, PebblePacket):
+            # Already decoded
+            self.event_handler.broadcast_event(
+                (_EventType.Watch, type(message)),
+                message,
+            )
+            return
+
         if self.log_protocol_level is not None:
             logger.log(self.log_protocol_level, "<- %s", hexlify(message).decode())
         message = self.pending_bytes + message
@@ -127,10 +157,11 @@ class PebbleConnection(object):
                 self.pending_bytes = message
                 break
             except Exception:
-                # At this point we've failed to deconstruct the message via normal means, but we don't want to end
-                # up permanently desynced (because we wiped a partial message), nor do we want to get stuck (because
-                # we didn't wipe anything). We therefore parse the packet length manually and skip ahead that far.
-                # If the expected length is 0, we wipe everything to ensure forward motion (but we are quite probably
+                # At this point we've failed to deconstruct the message via normal means, but we
+                # don't want to end up permanently desynced (because we wiped a partial message),
+                # nor do we want to get stuck (because we didn't wipe anything). We therefore
+                # parse the packet length manually and skip ahead that far. If the expected length
+                # is 0, we wipe everything to ensure forward motion (but we are quite probably
                 # screwed).
                 (expected_length,) = struct.unpack("!H", message[:2])
                 if expected_length == 0:
@@ -148,22 +179,29 @@ class PebbleConnection(object):
                 break
         self.pending_bytes = message
 
-    def _broadcast_transport_message(self, origin, message):
+    def _broadcast_transport_message(self, origin: MessageTarget, message: object) -> None:
         """
-        Broadcasts an event originating from a transport that does not represent a message from the Pebble.
+        Broadcasts an event originating from a transport that does not represent a message from
+        the Pebble.
 
         :param origin: The type of transport responsible for the message.
         :type origin: .MessageTarget
         :param message: The message from the transport
         """
         self.event_handler.broadcast_event(
-            (_EventType.Transport, type(origin), type(message)), message
+            (_EventType.Transport, type(origin), type(message)),
+            message,
         )
 
-    def register_transport_endpoint(self, origin, message_type, handler):
+    def register_transport_endpoint(
+        self,
+        origin: type[MessageTarget],
+        message_type: type,
+        handler: Callable,
+    ) -> object:
         """
-        Register a handler for a message received from a transport that does not indicate a message from the connected
-        Pebble.
+        Register a handler for a message received from a transport that does not indicate a message
+        from the connected Pebble.
 
         :param origin: The type of :class:`.MessageTarget` that triggers the message
         :param message_type: The class of the message that is expected.
@@ -172,10 +210,11 @@ class PebbleConnection(object):
         :return: A handle that can be passed to :meth:`unregister_endpoint` to remove the handler.
         """
         return self.event_handler.register_handler(
-            (_EventType.Transport, origin, message_type), handler
+            (_EventType.Transport, origin, message_type),
+            handler,
         )
 
-    def register_endpoint(self, endpoint, handler):
+    def register_endpoint(self, endpoint: type[PebblePacket], handler: Callable) -> object:
         """
         Register a handler for a message received from the Pebble.
 
@@ -187,9 +226,10 @@ class PebbleConnection(object):
         """
         return self.event_handler.register_handler((_EventType.Watch, endpoint), handler)
 
-    def register_raw_outbound_handler(self, handler):
+    def register_raw_outbound_handler(self, handler: Callable) -> object:
         """
-        Register a handler for all outgoing messages to be sent to the Pebble. Transport framing is not included.
+        Register a handler for all outgoing messages to be sent to the Pebble. Transport framing is
+        not included.
 
         :param handler: A callback to be called when any message is received.
         :type handler: callable
@@ -197,10 +237,11 @@ class PebbleConnection(object):
         """
         return self.event_handler.register_handler("raw_outbound", handler)
 
-    def register_raw_inbound_handler(self, handler):
+    def register_raw_inbound_handler(self, handler: Callable) -> object:
         """
-        Register a handler for all outgoing messages received from the Pebble. Transport framing is not included.
-        In most cases you should not need to use this; consider using :meth:`register_endpoint` instead.
+        Register a handler for all outgoing messages received from the Pebble. Transport framing
+        is not included. In most cases you should not need to use this; consider using
+        :meth:`register_endpoint` instead.
 
         :param handler: A callback to be called when any message is received.
         :type handler: callable
@@ -208,25 +249,28 @@ class PebbleConnection(object):
         """
         return self.event_handler.register_handler("raw_inbound", handler)
 
-    def unregister_endpoint(self, handle):
+    def unregister_endpoint(self, handle: object) -> None:
         """
-        Removes a handler registered by :meth:`register_transport_endpoint`, :meth:`register_endpoint`,
-        :meth:`register_raw_outbound_handler` or :meth:`register_raw_inbound_handler`.
+        Removes a handler registered by :meth:`register_transport_endpoint`,
+        :meth:`register_endpoint`, :meth:`register_raw_outbound_handler`
+        or :meth:`register_raw_inbound_handler`.
 
         :param handle: A handle returned by the register call to be undone.
         """
         return self.event_handler.unregister_handler(handle)
 
-    def read_from_endpoint(self, endpoint, timeout=15):
+    def read_from_endpoint(self, endpoint: type[T_Packet], timeout: int = 15) -> T_Packet:
         """
-        Blocking read from an endpoint. Will block until a message is received, or it times out. Also see
-        :meth:`get_endpoint_queue` if you are considering calling this in a loop.
+        Blocking read from an endpoint. Will block until a message is received, or it times out.
+        Also see :meth:`get_endpoint_queue` if you are considering calling this in a loop.
 
         .. warning::
-           Avoid calling this method from an endpoint callback; doing so is likely to lead to deadlock.
+           Avoid calling this method from an endpoint callback; doing so is likely to lead
+           to deadlock.
 
         .. note::
-           If you're reading a response to a message you just sent, :meth:`send_and_read` might be more appropriate.
+           If you're reading a response to a message you just sent, :meth:`send_and_read` might
+           be more appropriate.
 
         :param endpoint: The endpoint to read from.
         :type endpoint: .PacketType
@@ -235,12 +279,13 @@ class PebbleConnection(object):
         """
         return self.event_handler.wait_for_event((_EventType.Watch, endpoint), timeout=timeout)
 
-    def get_endpoint_queue(self, endpoint):
+    def get_endpoint_queue(self, endpoint: type[T_Packet]) -> BaseEventQueue:
         """
-        Returns a :class:`.BaseEventQueue` from which messages to the given ``endpoint`` can be read.
+        Returns a :class:`.BaseEventQueue` from which messages to the given ``endpoint``
+        can be read.
 
-        This is useful if you need to make sure that you receive all messages to an endpoint, without risking
-        dropping some due to time in between :meth:`read_from_endpoint` calls.
+        This is useful if you need to make sure that you receive all messages to an endpoint,
+        without risking dropping some due to time in between :meth:`read_from_endpoint` calls.
 
         :param endpoint: The endpoint to read from
         :type endpoint: .PacketType
@@ -248,13 +293,19 @@ class PebbleConnection(object):
         """
         return self.event_handler.queue_events((_EventType.Watch, endpoint))
 
-    def read_transport_message(self, origin, message_type, timeout=15):
+    def read_transport_message(
+        self,
+        origin: type[MessageTarget],
+        message_type: type,
+        timeout: int = 15,
+    ) -> object:
         """
         Blocking read of a transport message that does not indicate a message from the Pebble.
         Will block until a message is received, or it times out.
 
         .. warning::
-           Avoid calling this method from an endpoint callback; doing so is likely to lead to deadlock.
+           Avoid calling this method from an endpoint callback; doing so is likely to lead
+           to deadlock.
 
         :param origin: The type of :class:`.MessageTarget` that triggers the message.
         :param message_type: The class of the message to read from the transport.
@@ -262,10 +313,11 @@ class PebbleConnection(object):
         :return: The object read from the transport; of the same type as passed to ``message_type``.
         """
         return self.event_handler.wait_for_event(
-            (_EventType.Transport, origin, message_type), timeout=timeout
+            (_EventType.Transport, origin, message_type),
+            timeout=timeout,
         )
 
-    def send_packet(self, packet):
+    def send_packet(self, packet: PebblePacket) -> None:
         """
         Sends a message to the Pebble.
 
@@ -278,13 +330,16 @@ class PebbleConnection(object):
         self.event_handler.broadcast_event("raw_outbound", serialised)
         self.send_raw(serialised)
 
-    def send_and_read(self, packet, endpoint, timeout=15):
+    def send_and_read(
+        self, packet: PebblePacket, endpoint: type[T_Packet], timeout: int = 15,
+    ) -> T_Packet:
         """
-        Sends a packet, then returns the next response received from that endpoint. This method sets up a listener
-        before it actually sends the message, avoiding a potential race.
+        Sends a packet, then returns the next response received from that endpoint. This method
+        sets up a listener before it actually sends the message, avoiding a potential race.
 
         .. warning::
-           Avoid calling this method from an endpoint callback; doing so is likely to lead to deadlock.
+           Avoid calling this method from an endpoint callback; doing so is likely to lead
+           to deadlock.
 
         :param packet: The message to send.
         :type packet: .PebblePacket
@@ -300,10 +355,10 @@ class PebbleConnection(object):
         finally:
             queue.close()
 
-    def send_raw(self, message):
+    def send_raw(self, message: bytes) -> None:
         """
-        Sends a raw binary message to the Pebble. No processing will be applied, but any transport framing should be
-        omitted.
+        Sends a raw binary message to the Pebble. No processing will be applied, but any transport
+        framing should be omitted.
 
         :param message: The message to send to the pebble.
         :type message: bytes
@@ -312,11 +367,11 @@ class PebbleConnection(object):
             logger.log(self.log_protocol_level, "-> %s", hexlify(message).decode())
         self.transport.send_packet(message)
 
-    def _register_internal_handlers(self):
+    def _register_internal_handlers(self) -> None:
         if self.transport.must_initialise:
             self.register_endpoint(PhoneAppVersion, self._app_version_response)
 
-    def _app_version_response(self, packet):
+    def _app_version_response(self, packet: PhoneAppVersion) -> None:
         packet = PhoneAppVersion(
             message=AppVersionResponse(
                 protocol_version=0xFFFFFFFF,
@@ -327,27 +382,29 @@ class PebbleConnection(object):
                 minor_version=0,
                 bugfix_version=0,
                 protocol_caps=0xFFFFFFFFFFFFFFFF,
-            )
+            ),
         )
         self.send_packet(packet)
 
-    def fetch_watch_info(self):
+    def fetch_watch_info(self) -> None:
         """
         This method should be called before accessing :attr:`watch_info`, :attr:`firmware_version`
         or :attr:`watch_platform`. Blocks until it has fetched the required information.
         """
-        self._watch_info = self.send_and_read(
-            WatchVersion(data=WatchVersionRequest()), WatchVersion
-        ).data
+        info = self.send_and_read(
+            WatchVersion(data=WatchVersionRequest()), WatchVersion,
+        )
+        self._watch_info = info.data if info else None
 
     @property
-    def watch_info(self):
+    def watch_info(self) -> WatchVersionResponse | None:
         """
-        Returns information on the connected Pebble, including its firmware version, language, capabilities, etc.
+        Returns information on the connected Pebble, including its firmware version, language,
+        capabilities, etc.
 
         .. note:
-           This is a blocking call if :meth:`fetch_watch_info` has not yet been called, which could lead to deadlock
-           if called in an endpoint callback.
+           This is a blocking call if :meth:`fetch_watch_info` has not yet been called, which could
+           lead to deadlock if called in an endpoint callback.
 
         :rtype: .WatchVersionResponse
         """
@@ -356,30 +413,32 @@ class PebbleConnection(object):
         return self._watch_info
 
     @property
-    def firmware_version(self):
+    def firmware_version(self) -> FirmwareVersion:
         """
-        Provides information on the connected Pebble, including its firmware version, language, capabilities, etc.
+        Provides information on the connected Pebble, including its firmware version, language,
+        capabilities, etc.
 
         .. note:
-           This is a blocking call if :meth:`fetch_watch_info` has not yet been called, which could lead to deadlock
-           if called in an endpoint callback.
+           This is a blocking call if :meth:`fetch_watch_info` has not yet been called, which could
+           lead to deadlock if called in an endpoint callback.
 
         :rtype: .WatchVersionResponse
         """
+        if self.watch_info is None or self.watch_info.running is None:
+            return FirmwareVersion(0, 0, 0, "")
+
         version = self.watch_info.running.version_tag[1:]
         parts = version.split("-", 1)
         points = [int(x) for x in parts[0].split(".")]
         while len(points) < 3:
             points.append(0)
-        if len(parts) == 2:
-            suffix = parts[1]
-        else:
-            suffix = ""
-        return FirmwareVersion(*(points + [suffix]))
+        suffix = parts[1] if len(parts) == 2 else ""
+        return FirmwareVersion(*([*points, suffix]))
 
     @property
-    def watch_model(self):
+    def watch_model(self) -> Model:
         """
+        The model of the connected Pebble.
 
         :return: The model of the watch.
         :rtype: ~libpebble2.protocol.system.Model
@@ -393,32 +452,38 @@ class PebbleConnection(object):
         return self._watch_model
 
     @property
-    def watch_platform(self):
+    def watch_platform(self) -> str:
         """
         A string naming the platform of the watch ('aplite', 'basalt', 'chalk', or 'unknown').
 
         .. note:
-           This is a blocking call if :meth:`fetch_watch_info` has not yet been called, which could lead to deadlock
-           if called in an endpoint callback.
+           This is a blocking call if :meth:`fetch_watch_info` has not yet been called, which
+           could lead to deadlock if called in an endpoint callback.
 
         :rtype: str
         """
-        return PebbleHardware.hardware_platform(
-            self.watch_info.running.hardware_platform,
-        )
+        if self.watch_info is None or self.watch_info.running is None:
+            return "unknown"
+        return PebbleHardware.hardware_platform(self.watch_info.running.hardware_platform)
 
-    def __enter__(self):
+    def __enter__(self) -> "PebbleConnection":
         if not self.connected:
             self.connect()
         return self
 
-    def __exit__(self, exc_type, exc, tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> bool:
         try:
             if hasattr(self.transport, "disconnect"):
                 self.transport.disconnect()
         finally:
             return False
 
-    def close(self):
+    def close(self) -> None:
+        """Closes the connection to the Pebble."""
         if hasattr(self.transport, "disconnect"):
             self.transport.disconnect()
