@@ -63,18 +63,12 @@ class AppInstaller(EventSourceMixin):
         if not self._bundle.is_app_bundle:
             raise AppInstallError("This is not an app bundle.")
 
-        self.total_size = self._bundle.zip.getinfo(
-            self._bundle.get_app_path()
-        ).file_size
+        self.total_size = self._bundle.zip.getinfo(self._bundle.get_app_path()).file_size
         if self._bundle.has_resources:
-            self.total_size += self._bundle.zip.getinfo(
-                self._bundle.get_resource_path()
-            ).file_size
+            self.total_size += self._bundle.zip.getinfo(self._bundle.get_resource_path()).file_size
 
         if self._bundle.has_worker:
-            self.total_size += self._bundle.zip.getinfo(
-                self._bundle.get_worker_path()
-            ).file_size
+            self.total_size += self._bundle.zip.getinfo(self._bundle.get_worker_path()).file_size
 
     def install(self, force_install=False):
         """
@@ -121,9 +115,7 @@ class AppInstaller(EventSourceMixin):
             AppRunState(data=AppRunStateStart(uuid=app_uuid)), AppFetchRequest
         )
         if app_fetch.uuid != app_uuid:
-            self._pebble.send_packet(
-                AppFetchResponse(response=AppFetchStatus.InvalidUUID)
-            )
+            self._pebble.send_packet(AppFetchResponse(response=AppFetchStatus.InvalidUUID))
             raise AppInstallError(
                 "App requested the wrong UUID! Asked for {}; expected {}".format(
                     app_fetch.uuid, app_uuid
@@ -186,23 +178,15 @@ class AppInstaller(EventSourceMixin):
 
         # Mark it as available
         self._pebble.send_and_read(
-            LegacyAppInstallRequest(
-                data=LegacyAppAvailable(bank=first_free, vibrate=True)
-            ),
+            LegacyAppInstallRequest(data=LegacyAppAvailable(bank=first_free, vibrate=True)),
             LegacyAppInstallResponse,
         )
 
         # Launch it (which is painful on 2.x).
-        appmessage = AppMessageService(
-            self._pebble, message_type=LegacyAppLaunchMessage
-        )
+        appmessage = AppMessageService(self._pebble, message_type=LegacyAppLaunchMessage)
         appmessage.send_message(
             app_uuid,
-            {
-                LegacyAppLaunchMessage.Keys.RunState: AMUint8(
-                    LegacyAppLaunchMessage.States.Running
-                )
-            },
+            {LegacyAppLaunchMessage.Keys.RunState: AMUint8(LegacyAppLaunchMessage.States.Running)},
         )
         appmessage.shutdown()
 

@@ -103,9 +103,7 @@ class BlobDBClient(EventSourceMixin):
         self._enqueue(
             self._PendingItem(
                 token,
-                BlobCommand(
-                    token=token, database=database, content=DeleteCommand(key=key.bytes)
-                ),
+                BlobCommand(token=token, database=database, content=DeleteCommand(key=key.bytes)),
                 callback,
             )
         )
@@ -136,9 +134,7 @@ class BlobDBClient(EventSourceMixin):
                 for token, pending in list(self._pending_ack.items()):
                     if now - pending.timestamp > self._timeout:
                         del self._pending_ack[token]
-                        self._enqueue(
-                            self._PendingItem(token, pending.data, pending.callback)
-                        )
+                        self._enqueue(self._PendingItem(token, pending.data, pending.callback))
             time.sleep(5)
 
     def _send_queued_data(self):

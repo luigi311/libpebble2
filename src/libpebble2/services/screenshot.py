@@ -41,9 +41,7 @@ class Screenshot(EventSourceMixin):
         header = ScreenshotHeader.parse(data)[0]
         if header.response_code != ScreenshotHeader.ResponseCode.OK:
             queue.close()
-            raise ScreenshotError(
-                "Screenshot failed: {!s}".format(header.response_code)
-            )
+            raise ScreenshotError("Screenshot failed: {!s}".format(header.response_code))
         data = header.data
         expected_size = self._get_expected_bytes(header)
         while len(data) < expected_size:
@@ -59,9 +57,7 @@ class Screenshot(EventSourceMixin):
         elif header.version == 2:
             return header.width * header.height
         else:
-            raise ScreenshotError(
-                "Unknown screenshot version: {}".format(header.version)
-            )
+            raise ScreenshotError("Unknown screenshot version: {}".format(header.version))
 
     @classmethod
     def _decode_image(cls, header, data):

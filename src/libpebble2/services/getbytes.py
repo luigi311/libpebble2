@@ -40,9 +40,7 @@ class GetBytesService(EventSourceMixin):
         :rtype: bytes
         """
         return self._get(
-            GetBytesUnreadCoredumpRequest()
-            if require_fresh
-            else GetBytesCoredumpRequest()
+            GetBytesUnreadCoredumpRequest() if require_fresh else GetBytesCoredumpRequest()
         )
 
     def get_file(self, filename):

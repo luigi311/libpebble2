@@ -13,6 +13,7 @@ from .protocol import (
 )
 from libpebble2.exceptions import ConnectionError, PacketDecodeError
 
+
 class MessageTargetQemu(MessageTarget):
     """
     Indicates that a message is directed at QEMU, rather than the firmware running on it. If ``raw`` is ``True``,
@@ -72,10 +73,7 @@ class QemuTransport(BaseTransport):
                     pass
                 else:
                     self.assembled_data = self.assembled_data[length:]
-                    if (
-                        packet.signature == HEADER_SIGNATURE
-                        and packet.footer == FOOTER_SIGNATURE
-                    ):
+                    if packet.signature == HEADER_SIGNATURE and packet.footer == FOOTER_SIGNATURE:
                         if isinstance(packet.data, QemuSPP):
                             return MessageTargetWatch(), packet.data.payload
                         else:
@@ -112,9 +110,7 @@ class QemuTransport(BaseTransport):
                     if bytes_to_send > self.BUFFER_SIZE:
                         bytes_to_send = self.BUFFER_SIZE
                     chunk = message[start_idx : start_idx + bytes_to_send]
-                    self.socket.send(
-                        QemuPacket(data=QemuSPP(payload=chunk)).serialise()
-                    )
+                    self.socket.send(QemuPacket(data=QemuSPP(payload=chunk)).serialise())
                     bytes_left -= bytes_to_send
                     start_idx += bytes_to_send
             elif isinstance(target, MessageTargetQemu):
@@ -122,9 +118,7 @@ class QemuTransport(BaseTransport):
                     self.socket.send(QemuPacket(data=message).serialise())
                 else:
                     self.socket.send(
-                        QemuRawPacket(
-                            protocol=target.protocol, data=message
-                        ).serialise()
+                        QemuRawPacket(protocol=target.protocol, data=message).serialise()
                     )
             else:
                 assert False

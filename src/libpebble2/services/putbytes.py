@@ -39,9 +39,7 @@ class PutBytes(EventSourceMixin):
     :type app_install_id: int
     """
 
-    def __init__(
-        self, pebble, object_type, object, bank=None, filename="", app_install_id=None
-    ):
+    def __init__(self, pebble, object_type, object, bank=None, filename="", app_install_id=None):
         self._pebble = pebble
         self._object_type = object_type
         self._object = object
@@ -103,26 +101,16 @@ class PutBytes(EventSourceMixin):
         length = 2000
         while sent < len(self._object):
             chunk = self._object[sent : sent + length]
-            packet = transfers.PutBytes(
-                data=transfers.PutBytesPut(cookie=cookie, payload=chunk)
-            )
-            self._assert_success(
-                self._pebble.send_and_read(packet, transfers.PutBytesResponse)
-            )
+            packet = transfers.PutBytes(data=transfers.PutBytesPut(cookie=cookie, payload=chunk))
+            self._assert_success(self._pebble.send_and_read(packet, transfers.PutBytesResponse))
             sent += len(chunk)
             self._broadcast_event("progress", len(chunk), sent, len(self._object))
 
     def _commit(self, cookie):
         crc = stm32_crc.crc32(self._object)
-        packet = transfers.PutBytes(
-            data=transfers.PutBytesCommit(cookie=cookie, object_crc=crc)
-        )
-        self._assert_success(
-            self._pebble.send_and_read(packet, transfers.PutBytesResponse)
-        )
+        packet = transfers.PutBytes(data=transfers.PutBytesCommit(cookie=cookie, object_crc=crc))
+        self._assert_success(self._pebble.send_and_read(packet, transfers.PutBytesResponse))
 
     def _install(self, cookie):
         packet = transfers.PutBytes(data=transfers.PutBytesInstall(cookie=cookie))
-        self._assert_success(
-            self._pebble.send_and_read(packet, transfers.PutBytesResponse)
-        )
+        self._assert_success(self._pebble.send_and_read(packet, transfers.PutBytesResponse))

@@ -105,9 +105,7 @@ class PebbleConnection(object):
         # If called prior to connecting, do so now.
         if not self.connected:
             self.connect()
-        thread = threading.Thread(
-            target=self.run_sync, daemon=True, name="PebbleConnection"
-        )
+        thread = threading.Thread(target=self.run_sync, daemon=True, name="PebbleConnection")
         thread.start()
         self.fetch_watch_info()
 
@@ -187,9 +185,7 @@ class PebbleConnection(object):
         :type handler: callable
         :return: A handle that can be passed to :meth:`unregister_endpoint` to remove the handler.
         """
-        return self.event_handler.register_handler(
-            (_EventType.Watch, endpoint), handler
-        )
+        return self.event_handler.register_handler((_EventType.Watch, endpoint), handler)
 
     def register_raw_outbound_handler(self, handler):
         """
@@ -237,9 +233,7 @@ class PebbleConnection(object):
         :param timeout: The maximum time to wait before raising :exc:`.TimeoutError`.
         :return: The message read from the endpoint; of the same type as passed to ``endpoint``.
         """
-        return self.event_handler.wait_for_event(
-            (_EventType.Watch, endpoint), timeout=timeout
-        )
+        return self.event_handler.wait_for_event((_EventType.Watch, endpoint), timeout=timeout)
 
     def get_endpoint_queue(self, endpoint):
         """
@@ -391,9 +385,7 @@ class PebbleConnection(object):
         :rtype: ~libpebble2.protocol.system.Model
         """
         if self._watch_model is None:
-            info_bytes = self.send_and_read(
-                WatchModel(data=ModelRequest()), WatchModel
-            ).data.data
+            info_bytes = self.send_and_read(WatchModel(data=ModelRequest()), WatchModel).data.data
             if len(info_bytes) == 4:
                 (self._watch_model,) = struct.unpack(">I", info_bytes)
             else:
@@ -415,7 +407,7 @@ class PebbleConnection(object):
             self.watch_info.running.hardware_platform,
         )
 
-    def __enter__(self): 
+    def __enter__(self):
         if not self.connected:
             self.connect()
         return self

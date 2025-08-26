@@ -33,9 +33,7 @@ class AppGlances(object):
         :param slices: The slices with which to reload the app's glance.
         :type slices: list[.AppGlanceSlice]
         """
-        glance = AppGlance(
-            version=1, creation_time=int(time.time()), slices=(slices or [])
-        )
+        glance = AppGlance(version=1, creation_time=int(time.time()), slices=(slices or []))
         SyncWrapper(
             self._blobdb.insert,
             BlobDatabaseID.AppGlance,

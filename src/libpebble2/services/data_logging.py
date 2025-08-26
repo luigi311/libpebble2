@@ -39,9 +39,7 @@ class DataLoggingService(EventSourceMixin):
         # We have to open this queue before we make the request, to ensure we don't miss the response.
         queue = self._pebble.get_endpoint_queue(DataLogging)
 
-        self._pebble.send_packet(
-            DataLogging(data=DataLoggingReportOpenSessions(sessions=[]))
-        )
+        self._pebble.send_packet(DataLogging(data=DataLoggingReportOpenSessions(sessions=[])))
 
         sessions = []
         while True:
@@ -68,9 +66,7 @@ class DataLoggingService(EventSourceMixin):
         queue = self._pebble.get_endpoint_queue(DataLogging)
 
         # First, we need to open up all sessions
-        self._pebble.send_packet(
-            DataLogging(data=DataLoggingReportOpenSessions(sessions=[]))
-        )
+        self._pebble.send_packet(DataLogging(data=DataLoggingReportOpenSessions(sessions=[])))
 
         session = None
         while True:
@@ -93,9 +89,7 @@ class DataLoggingService(EventSourceMixin):
         # -----------------------------------------------------------------------------
         # Request an empty of this session
         logger.info("Requesting empty of session {}".format(session_id))
-        self._pebble.send_packet(
-            DataLogging(data=DataLoggingEmptySession(session_id=session_id))
-        )
+        self._pebble.send_packet(DataLogging(data=DataLoggingEmptySession(session_id=session_id)))
         data = None
         timeout_count = 0
         while True:
@@ -104,9 +98,7 @@ class DataLoggingService(EventSourceMixin):
                 result = queue.get(timeout=5).data
                 timeout_count = 0
             except TimeoutError:
-                logger.debug(
-                    "Got timeout error Time: {}".format(datetime.datetime.now())
-                )
+                logger.debug("Got timeout error Time: {}".format(datetime.datetime.now()))
                 timeout_count += 1
                 if timeout_count >= 2:
                     break
@@ -122,9 +114,7 @@ class DataLoggingService(EventSourceMixin):
                         DataLogging(data=DataLoggingNACK(session_id=result.session_id))
                     )
                 else:
-                    logger.info(
-                        "Received {} bytes of data: {}".format(len(result.data), result)
-                    )
+                    logger.info("Received {} bytes of data: {}".format(len(result.data), result))
                     if data is None:
                         data = result.data
                     else:
@@ -159,6 +149,4 @@ class DataLoggingService(EventSourceMixin):
         """
         Set the send enable setting on the watch
         """
-        self._pebble.send_packet(
-            DataLogging(data=DataLoggingSetSendEnable(enabled=setting))
-        )
+        self._pebble.send_packet(DataLogging(data=DataLoggingSetSendEnable(enabled=setting)))

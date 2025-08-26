@@ -56,9 +56,7 @@ class AppMessageService(EventSourceMixin):
         self._pending_messages = {}
         self._message_type = message_type
         super(AppMessageService, self).__init__()
-        self._handle = self._pebble.register_endpoint(
-            self._message_type, self._handle_message
-        )
+        self._handle = self._pebble.register_endpoint(self._message_type, self._handle_message)
 
     def _handle_message(self, packet):
         assert isinstance(packet, AppMessage)
@@ -70,16 +68,10 @@ class AppMessageService(EventSourceMixin):
                 if t.type == AppMessageTuple.Type.ByteArray:
                     result[t.key] = bytearray(t.data)
                 elif t.type == AppMessageTuple.Type.CString:
-                    result[t.key] = t.data.split(b"\x00")[0].decode(
-                        "utf-8", errors="replace"
-                    )
+                    result[t.key] = t.data.split(b"\x00")[0].decode("utf-8", errors="replace")
                 else:
-                    (result[t.key],) = struct.unpack(
-                        self._type_mapping[(t.type, t.length)], t.data
-                    )
-            self._broadcast_event(
-                "appmessage", packet.transaction_id, message.uuid, result
-            )
+                    (result[t.key],) = struct.unpack(self._type_mapping[(t.type, t.length)], t.data)
+            self._broadcast_event("appmessage", packet.transaction_id, message.uuid, result)
             self._pebble.send_packet(
                 AppMessage(transaction_id=packet.transaction_id, data=AppMessageACK())
             )
@@ -146,9 +138,7 @@ class AppMessageService(EventSourceMixin):
                 )
             elif v.type == AppMessageTuple.Type.CString:
                 tuples.append(
-                    AppMessageTuple(
-                        key=k, type=v.type, data=v.value.encode("utf-8") + b"\x00"
-                    )
+                    AppMessageTuple(key=k, type=v.type, data=v.value.encode("utf-8") + b"\x00")
                 )
             elif v.type == AppMessageTuple.Type.ByteArray:
                 tuples.append(AppMessageTuple(key=k, type=v.type, data=v.value))

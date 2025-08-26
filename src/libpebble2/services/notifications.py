@@ -31,9 +31,7 @@ class Notifications(object):
         self._pebble = pebble
         self._blobdb = blobdb or BlobDBClient(pebble)
 
-    def send_notification(
-        self, subject="", message="", sender="", source=None, actions=None
-    ):
+    def send_notification(self, subject="", message="", sender="", source=None, actions=None):
         """
         Sends a notification. Blocks as long as necessary.
 
@@ -63,9 +61,7 @@ class Notifications(object):
             )
         )
 
-    def _send_modern_notification(
-        self, subject, message, sender, source, additional_actions
-    ):
+    def _send_modern_notification(self, subject, message, sender, source, additional_actions):
         source_map = {
             None: 1,
             NotificationSource.Email: 19,
@@ -75,18 +71,12 @@ class Notifications(object):
         }
         attributes = [
             TimelineAttribute(attribute_id=0x01, content=sender.encode("utf-8")),
-            TimelineAttribute(
-                attribute_id=4, content=struct.pack("<I", source_map[source])
-            ),
+            TimelineAttribute(attribute_id=4, content=struct.pack("<I", source_map[source])),
         ]
         if message:
-            attributes.append(
-                TimelineAttribute(attribute_id=0x03, content=message.encode("utf-8"))
-            )
+            attributes.append(TimelineAttribute(attribute_id=0x03, content=message.encode("utf-8")))
 
-        attributes.append(
-            TimelineAttribute(attribute_id=0x02, content=subject.encode("utf-8"))
-        )
+        attributes.append(TimelineAttribute(attribute_id=0x02, content=subject.encode("utf-8")))
         item_id = uuid.uuid4()
 
         actions = [

@@ -109,9 +109,7 @@ class PebblePacket(metaclass=PacketType):
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             if k.startswith("_"):
-                raise AttributeError(
-                    "You cannot set internal properties during construction."
-                )
+                raise AttributeError("You cannot set internal properties during construction.")
             getattr(self, k)  # Throws an exception if the property doesn't exist.
             setattr(self, k, v)
 
@@ -143,9 +141,7 @@ class PebblePacket(metaclass=PacketType):
 
         message = b""
         for k, v in self._type_mapping.items():
-            message += v.value_to_bytes(
-                self, getattr(self, k), default_endianness=endianness
-            )
+            message += v.value_to_bytes(self, getattr(self, k), default_endianness=endianness)
         return message
 
     def serialise_packet(self):
@@ -156,9 +152,7 @@ class PebblePacket(metaclass=PacketType):
         :return: A serialised message, ready to be sent to the Pebble.
         """
         if not hasattr(self, "_Meta"):
-            raise ReferenceError(
-                "Can't serialise a packet that doesn't have an endpoint ID."
-            )
+            raise ReferenceError("Can't serialise a packet that doesn't have an endpoint ID.")
         serialised = self.serialise()
         return struct.pack("!HH", len(serialised), self._Meta["endpoint"]) + serialised
 
