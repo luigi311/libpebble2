@@ -131,3 +131,11 @@ class QemuTransport(BaseTransport):
         except socket.error as e:
             self._connected = False
             raise ConnectionError(str(e))
+
+    def disconnect(self):
+        if self.socket is not None:
+            try:
+                self.socket.close()
+            finally:
+                self.socket = None
+                self._connected = False

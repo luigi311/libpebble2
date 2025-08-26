@@ -62,3 +62,10 @@ class SerialTransport(BaseTransport):
 
         assert isinstance(target, MessageTargetWatch)
         self.connection.write(message)
+
+    def disconnect(self):
+        try:
+            if self.connection:
+                self.connection.close()
+        finally:
+            self.connection = None

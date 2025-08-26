@@ -82,3 +82,10 @@ class WebsocketTransport(BaseTransport):
             raise ConnectionError("Connection gracefully closed by peer.")
         else:
             raise PebbleError("Got unexpected WebSocket opcode {}".format(opcode))
+
+    def disconnect(self):
+        if self.ws is not None:
+            try:
+                self.ws.close()
+            finally:
+                self.ws = None

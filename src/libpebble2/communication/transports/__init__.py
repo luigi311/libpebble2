@@ -57,3 +57,7 @@ class BaseTransport(metaclass=ABCMeta):
         :type target: MessageTarget
         """
         pass
+
+    def disconnect(self) -> None:
+        """Transports may implement graceful shutdown; default is no-op."""
+        return

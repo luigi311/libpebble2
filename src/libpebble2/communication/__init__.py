@@ -1,27 +1,27 @@
 __author__ = "katharine"
 
-from binascii import hexlify
-from collections import namedtuple
-from enum import Enum
 import logging
 import struct
 import threading
+from binascii import hexlify
+from collections import namedtuple
+from enum import Enum
 
-from .transports import BaseTransport, MessageTargetWatch
 from libpebble2.events.threaded import ThreadedEventHandler
-from libpebble2.exceptions import PacketDecodeError, ConnectionError, IncompleteMessage
-from libpebble2.protocol.base import PebblePacket, PacketType
+from libpebble2.exceptions import ConnectionError, IncompleteMessage, PacketDecodeError
+from libpebble2.protocol.base import PebblePacket
 from libpebble2.protocol.system import (
-    PhoneAppVersion,
     AppVersionResponse,
+    Model,
+    ModelRequest,
+    PhoneAppVersion,
+    WatchModel,
     WatchVersion,
     WatchVersionRequest,
-    WatchVersionResponse,
-    WatchModel,
-    ModelRequest,
-    Model,
 )
 from libpebble2.util.hardware import PebbleHardware
+
+from .transports import BaseTransport, MessageTargetWatch
 
 logger = logging.getLogger("libpebble2.communication")
 
@@ -58,15 +58,14 @@ class PebbleConnection(object):
 
     def connect(self):
         """
-        Synchronously initialises a connection to the Pebble. Once it returns, a valid connection will be open.
+        Synchronously initialises a connection to the Pebble. Once it returns, a valid connection
+        will be open.
         """
         self.transport.connect()
 
     @property
     def connected(self):
-        """
-        :return: ``True`` if currently connected to a Pebble; otherwise ``False``.
-        """
+        """:return: ``True`` if currently connected to a Pebble; otherwise ``False``."""
         return self.transport.connected
 
     def pump_reader(self):
@@ -413,5 +412,21 @@ class PebbleConnection(object):
         :rtype: str
         """
         return PebbleHardware.hardware_platform(
-            self.watch_info.running.hardware_platform
+            self.watch_info.running.hardware_platform,
         )
+
+    def __enter__(self): 
+        if not self.connected:
+            self.connect()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        try:
+            if hasattr(self.transport, "disconnect"):
+                self.transport.disconnect()
+        finally:
+            return False
+
+    def close(self):
+        if hasattr(self.transport, "disconnect"):
+            self.transport.disconnect()
