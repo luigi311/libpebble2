@@ -99,8 +99,11 @@ class QemuTransport(BaseTransport):
                 self._connected = False
                 raise ConnectionError("Disconnected.")
 
-    def send_packet(self, message, target=MessageTargetWatch()):
+    def send_packet(self, message, target=None):
         try:
+            if target is None:
+                target = MessageTargetWatch()
+
             if isinstance(target, MessageTargetWatch):
                 start_idx = 0
                 bytes_left = len(message)

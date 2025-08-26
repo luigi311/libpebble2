@@ -49,7 +49,10 @@ class WebsocketTransport(BaseTransport):
     def connected(self):
         return self.ws is not None and self.ws.connected
 
-    def send_packet(self, message, target=MessageTargetWatch()):
+    def send_packet(self, message, target=None):
+        if target is None:
+            target = MessageTargetWatch()
+
         handlers = {
             MessageTargetWatch: self._send_to_watch,
             MessageTargetPhone: self._send_to_phone,

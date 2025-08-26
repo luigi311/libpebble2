@@ -56,6 +56,9 @@ class SerialTransport(BaseTransport):
         data += self.connection.read(length + 2)
         return MessageTargetWatch(), data
 
-    def send_packet(self, message, target=MessageTargetWatch()):
+    def send_packet(self, message, target=None):
+        if target is None:
+            target = MessageTargetWatch()
+
         assert isinstance(target, MessageTargetWatch)
         self.connection.write(message)

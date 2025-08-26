@@ -85,7 +85,10 @@ class PULSETransport(BaseTransport):
             if opcode == self.OPCODE_PROTOCOL_DATA:
                 self.buffer += data
 
-    def send_packet(self, message, target=MessageTargetWatch()):
+    def send_packet(self, message, target=None):
+        if target is None:
+            target = MessageTargetWatch()
+
         assert isinstance(target, MessageTargetWatch)
         for chunk in self._chunks(message, self.connection.mtu - 1):
             self._send_with_opcode(self.OPCODE_PROTOCOL_DATA, chunk)

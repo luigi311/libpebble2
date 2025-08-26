@@ -46,7 +46,7 @@ class BaseTransport(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def send_packet(self, message, target=MessageTargetWatch()):
+    def send_packet(self, message, target=None):
         """
         Send a message. This message could be to the Pebble (in which case it must be a :class:`PebblePacket`), or
         to the transport (in which case the message type is transport-defined).
