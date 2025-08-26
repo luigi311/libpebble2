@@ -40,9 +40,7 @@ def test_receive_appmessage_string():
             data=AppMessagePush(
                 uuid=UUID(int=128),
                 dictionary=[
-                    AppMessageTuple(
-                        key=14, type=AppMessageTuple.Type.CString, data=b"hello!\x00"
-                    ),
+                    AppMessageTuple(key=14, type=AppMessageTuple.Type.CString, data=b"hello!\x00"),
                     AppMessageTuple(
                         key=15,
                         type=AppMessageTuple.Type.CString,
@@ -58,7 +56,5 @@ def test_receive_appmessage_string():
         )
     )
 
-    pebble.send_packet.assert_called_once_with(
-        AppMessage(transaction_id=42, data=AppMessageACK())
-    )
+    pebble.send_packet.assert_called_once_with(AppMessage(transaction_id=42, data=AppMessageACK()))
     assert calls == 1

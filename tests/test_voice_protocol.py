@@ -53,15 +53,9 @@ class TestVoiceProtocol(unittest.TestCase):
         bitstream_version_b = bytes([4])
         frame_size_le = u16(320)  # 0x0140
         speex_payload = (
-            version_padded
-            + sample_rate_le
-            + bit_rate_le
-            + bitstream_version_b
-            + frame_size_le
+            version_padded + sample_rate_le + bit_rate_le + bitstream_version_b + frame_size_le
         )
-        speex_attr = (
-            bytes([0x01]) + u16(len(speex_payload)) + speex_payload
-        )  # attr id 0x01
+        speex_attr = bytes([0x01]) + u16(len(speex_payload)) + speex_payload  # attr id 0x01
 
         # App UUID attribute (id 0x03)
         app_uuid_attr = bytes([0x03]) + u16(16) + app_uuid.bytes
@@ -131,9 +125,7 @@ class TestVoiceProtocol(unittest.TestCase):
 
         msg = VoiceControlResult(
             flags=Flags.AppInitiated,
-            data=SessionSetupResult(
-                session_type=SessionType.Dictation, result=Result.Success
-            ),
+            data=SessionSetupResult(session_type=SessionType.Dictation, result=Result.Success),
         )
         self.assertEqual(expected, msg.serialise())
 
@@ -191,9 +183,7 @@ class TestVoiceProtocol(unittest.TestCase):
         app_uuid_attr = bytes([0x03]) + u16(16) + app_uuid.bytes
 
         # Attribute: Transcription (id 0x02) with computed length
-        transcription_attr = (
-            bytes([0x02]) + u16(len(transcription_payload)) + transcription_payload
-        )
+        transcription_attr = bytes([0x02]) + u16(len(transcription_payload)) + transcription_payload
 
         attributes = app_uuid_attr + transcription_attr
 
@@ -231,9 +221,7 @@ class TestVoiceProtocol(unittest.TestCase):
         )
         msg = VoiceControlResult(
             flags=1,
-            data=DictationResult(
-                session_id=0x2211, result=Result.Success, attributes=attr_list
-            ),
+            data=DictationResult(session_id=0x2211, result=Result.Success, attributes=attr_list),
         )
         self.assertEqual(expected, msg.serialise())
 

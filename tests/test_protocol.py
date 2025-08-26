@@ -45,10 +45,7 @@ def packet():
 
 def do_serialise_test(packet, field, tuples):
     for endianness, input, output in tuples:
-        assert (
-            field.value_to_bytes(packet, input, default_endianness=str(endianness))
-            == output
-        )
+        assert field.value_to_bytes(packet, input, default_endianness=str(endianness)) == output
 
 
 def test_int8_serialise(packet):
@@ -202,20 +199,20 @@ def test_int16_dserialise_nothing(packet):
 def test_uuid_serialise(packet):
     field = UUID()
     some_uuid = uuid.UUID("01234567-8123-4123-4123-4123456789ab")
-    assert field.value_to_bytes(packet, some_uuid) == unhex(
-        "012345678123412341234123456789ab"
-    )
+    assert field.value_to_bytes(packet, some_uuid) == unhex("012345678123412341234123456789ab")
 
 
 def test_uuid_deserialise(packet):
     field = UUID()
     some_uuid = uuid.UUID("01234567-8123-4123-4123-4123456789ab")
-    assert field.buffer_to_value(
-        packet, unhex("012345678123412341234123456789ab"), 0
-    ) == (some_uuid, 16)
-    assert field.buffer_to_value(
-        packet, unhex("000000012345678123412341234123456789ab"), 3
-    ) == (some_uuid, 16)
+    assert field.buffer_to_value(packet, unhex("012345678123412341234123456789ab"), 0) == (
+        some_uuid,
+        16,
+    )
+    assert field.buffer_to_value(packet, unhex("000000012345678123412341234123456789ab"), 3) == (
+        some_uuid,
+        16,
+    )
 
 
 def test_uuid_deserialise_nothing(packet):
@@ -420,8 +417,7 @@ def test_pascal_list_no_count_serialise(packet):
         == b"\x05\x00\xffbar\x02\x00\xee"
     )
     assert (
-        field.value_to_bytes(packet, [Foo(foo=0x00FF)], default_endianness="<")
-        == b"\x02\xff\x00"
+        field.value_to_bytes(packet, [Foo(foo=0x00FF)], default_endianness="<") == b"\x02\xff\x00"
     )
 
 
@@ -493,14 +489,9 @@ def test_fixed_list_packet_plain_serialise(packet):
 
     assert field.value_to_bytes(packet, []) == b""
     assert field.value_to_bytes(packet, [Foo(foo=0xAABB)]) == b"\xaa\xbb"
+    assert field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)]) == b"\xaa\xbb\xcc\xdd"
     assert (
-        field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)])
-        == b"\xaa\xbb\xcc\xdd"
-    )
-    assert (
-        field.value_to_bytes(
-            packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)], default_endianness="<"
-        )
+        field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)], default_endianness="<")
         == b"\xbb\xaa\xdd\xcc"
     )
 
@@ -612,14 +603,9 @@ def test_fixed_list_packet_length_serialise(packet):
     assert field.value_to_bytes(packet, [Foo(foo=0xAABB)]) == b"\xaa\xbb"
     field.prepare(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)])
     assert packet.length == 6  # Because it adds on from the previous serialisation
+    assert field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)]) == b"\xaa\xbb\xcc\xdd"
     assert (
-        field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)])
-        == b"\xaa\xbb\xcc\xdd"
-    )
-    assert (
-        field.value_to_bytes(
-            packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)], default_endianness="<"
-        )
+        field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)], default_endianness="<")
         == b"\xbb\xaa\xdd\xcc"
     )
 
@@ -681,14 +667,9 @@ def test_fixed_list_packet_count_serialise(packet):
     assert field.value_to_bytes(packet, [Foo(foo=0xAABB)]) == b"\xaa\xbb"
     field.prepare(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)])
     assert packet.count == 2
+    assert field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)]) == b"\xaa\xbb\xcc\xdd"
     assert (
-        field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)])
-        == b"\xaa\xbb\xcc\xdd"
-    )
-    assert (
-        field.value_to_bytes(
-            packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)], default_endianness="<"
-        )
+        field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)], default_endianness="<")
         == b"\xbb\xaa\xdd\xcc"
     )
 
@@ -796,10 +777,7 @@ def test_embed_serialise(packet):
 
     field = Embed(Foo)
     assert field.value_to_bytes(packet, Foo(foo=0xAABB)) == b"\xaa\xbb"
-    assert (
-        field.value_to_bytes(packet, Foo(foo=0xAABB), default_endianness="<")
-        == b"\xbb\xaa"
-    )
+    assert field.value_to_bytes(packet, Foo(foo=0xAABB), default_endianness="<") == b"\xbb\xaa"
 
 
 def test_embed_deserialise(packet):
@@ -808,9 +786,10 @@ def test_embed_deserialise(packet):
 
     field = Embed(Foo)
     assert field.buffer_to_value(packet, b"foo\xaa\xbbfoo", 3) == (Foo(foo=0xAABB), 2)
-    assert field.buffer_to_value(
-        packet, b"foo\xaa\xbbfoo", 3, default_endianness="<"
-    ) == (Foo(foo=0xBBAA), 2)
+    assert field.buffer_to_value(packet, b"foo\xaa\xbbfoo", 3, default_endianness="<") == (
+        Foo(foo=0xBBAA),
+        2,
+    )
 
 
 def test_union_serialise(packet):
@@ -825,10 +804,7 @@ def test_union_serialise(packet):
     field.prepare(packet, Foo(foo=0x4243))
     assert packet.command == 1
     assert field.value_to_bytes(packet, Foo(foo=0x4243)) == b"\x42\x43"
-    assert (
-        field.value_to_bytes(packet, Foo(foo=0x4243), default_endianness="<")
-        == b"\x43\x42"
-    )
+    assert field.value_to_bytes(packet, Foo(foo=0x4243), default_endianness="<") == b"\x43\x42"
 
     field.prepare(packet, Bar())
 
