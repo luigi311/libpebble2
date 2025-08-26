@@ -1,4 +1,4 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 import errno
 import serial
@@ -20,6 +20,7 @@ class SerialTransport(BaseTransport):
                    ``/dev/cu.PebbleXXXX-SerialPortSe``).
     :type device: str
     """
+
     must_initialise = True
 
     def __init__(self, device):
@@ -51,7 +52,7 @@ class SerialTransport(BaseTransport):
         if len(data) < 2:
             raise ConnectionError("Got malformed packet.")
 
-        length, = struct.unpack('!H', data)
+        (length,) = struct.unpack("!H", data)
         data += self.connection.read(length + 2)
         return MessageTargetWatch(), data
 

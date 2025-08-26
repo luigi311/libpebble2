@@ -1,14 +1,41 @@
-__author__ = 'andrews'
+__author__ = "andrews"
 
 from enum import IntEnum
 
 from .base import PebblePacket
-from .base.types import Embed, FixedList, FixedString, UUID, Uint16, Uint32, Uint8, Union
+from .base.types import (
+    Embed,
+    FixedList,
+    FixedString,
+    UUID,
+    Uint16,
+    Uint32,
+    Uint8,
+    Union,
+)
 
-__all__ = ["AudioCodec", "SpeexEncoderInfo", "Transcription", "AttributeType", "Attribute", "AttributeList",
-           "SessionType", "Command", "SessionSetupCommand", "VoiceControlCommand", "Result", "SessionSetupResult",
-           "DictationResult", "VoiceControlResult", "Word", "Sentence", "SentenceList", "TranscriptionType", "AppUuid",
-           "Flags"]
+__all__ = [
+    "AudioCodec",
+    "SpeexEncoderInfo",
+    "Transcription",
+    "AttributeType",
+    "Attribute",
+    "AttributeList",
+    "SessionType",
+    "Command",
+    "SessionSetupCommand",
+    "VoiceControlCommand",
+    "Result",
+    "SessionSetupResult",
+    "DictationResult",
+    "VoiceControlResult",
+    "Word",
+    "Sentence",
+    "SentenceList",
+    "TranscriptionType",
+    "AppUuid",
+    "Flags",
+]
 
 
 class AudioCodec(IntEnum):
@@ -45,9 +72,7 @@ class TranscriptionType(IntEnum):
 
 class Transcription(PebblePacket):
     type = Uint8(enum=TranscriptionType)
-    transcription = Union(type, {
-        TranscriptionType.SentenceList: SentenceList
-    })
+    transcription = Union(type, {TranscriptionType.SentenceList: SentenceList})
 
 
 class AppUuid(PebblePacket):
@@ -64,11 +89,16 @@ class Attribute(PebblePacket):
     # Voice endpoint attribute (key-value pair)
     id = Uint8(enum=AttributeType)
     length = Uint16()
-    data = Union(id, {
-        AttributeType.SpeexEncoderInfo: SpeexEncoderInfo,
-        AttributeType.Transcription: Transcription,
-        AttributeType.AppUuid: AppUuid,
-    }, length=length, accept_missing=True)
+    data = Union(
+        id,
+        {
+            AttributeType.SpeexEncoderInfo: SpeexEncoderInfo,
+            AttributeType.Transcription: Transcription,
+            AttributeType.AppUuid: AppUuid,
+        },
+        length=length,
+        accept_missing=True,
+    )
 
 
 class AttributeList(PebblePacket):
@@ -109,14 +139,17 @@ class Command(IntEnum):
 
 class VoiceControlCommand(PebblePacket):
     class Meta:
-        endpoint = 0x2af8
-        endianness = '<'
+        endpoint = 0x2AF8
+        endianness = "<"
 
     command = Uint8(enum=Command)
     flags = Uint32()
-    data = Union(command, {
-        Command.SessionSetup: SessionSetupCommand,
-    })
+    data = Union(
+        command,
+        {
+            Command.SessionSetup: SessionSetupCommand,
+        },
+    )
 
 
 class Result(IntEnum):
@@ -147,13 +180,16 @@ class DictationResult(PebblePacket):
 
 class VoiceControlResult(PebblePacket):
     class Meta:
-        endpoint = 0x2af8
-        endianness = '<'
+        endpoint = 0x2AF8
+        endianness = "<"
         register = False
 
     command = Uint8(enum=Command)
     flags = Uint32()
-    data = Union(command, {
-        Command.SessionSetup: SessionSetupResult,
-        Command.DictationResult: DictationResult
-    })
+    data = Union(
+        command,
+        {
+            Command.SessionSetup: SessionSetupResult,
+            Command.DictationResult: DictationResult,
+        },
+    )

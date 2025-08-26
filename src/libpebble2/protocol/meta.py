@@ -1,4 +1,4 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from enum import IntEnum
 
@@ -13,8 +13,8 @@ class MetaProtocolMessage(PebblePacket):
         endpoint = 0x00
 
     class Type(IntEnum):
-        Disallowed = 0xdd
-        Unhandled = 0xdc
+        Disallowed = 0xDD
+        Unhandled = 0xDC
 
     type = Uint8(enum=Type)
     endpoint_id = Uint16()

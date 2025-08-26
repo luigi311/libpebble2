@@ -1,12 +1,28 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from libpebble2.protocol.blobdb import BlobDatabaseID
 from .blobdb import BlobDBClient, SyncWrapper, BlobStatus
 from .putbytes import PutBytes, PutBytesType
 from libpebble2.events.mixin import EventSourceMixin
 from libpebble2.exceptions import AppInstallError
-from libpebble2.protocol.apps import AppMetadata, AppRunState, AppRunStateStart, AppFetchRequest, AppFetchResponse, AppFetchStatus
-from libpebble2.protocol.legacy2 import LegacyAppInstallRequest, LegacyAppInstallResponse, LegacyUpgradeAppUUID, LegacyBankInfoRequest, LegacyBankInfoResponse, LegacyBankEntry, LegacyAppAvailable, LegacyAppLaunchMessage
+from libpebble2.protocol.apps import (
+    AppMetadata,
+    AppRunState,
+    AppRunStateStart,
+    AppFetchRequest,
+    AppFetchResponse,
+    AppFetchStatus,
+)
+from libpebble2.protocol.legacy2 import (
+    LegacyAppInstallRequest,
+    LegacyAppInstallResponse,
+    LegacyUpgradeAppUUID,
+    LegacyBankInfoRequest,
+    LegacyBankInfoResponse,
+    LegacyBankEntry,
+    LegacyAppAvailable,
+    LegacyAppLaunchMessage,
+)
 from libpebble2.services.appmessage import AppMessageService, Uint8 as AMUint8
 from libpebble2.util.bundle import PebbleBundle
 
@@ -29,6 +45,7 @@ class AppInstaller(EventSourceMixin):
                           created.
     :type blobdb_client: .BlobDBClient
     """
+
     def __init__(self, pebble, pbw_path, blobdb_client=None):
         self._pebble = pebble
         self._blobdb = blobdb_client or BlobDBClient(pebble)
@@ -40,16 +57,24 @@ class AppInstaller(EventSourceMixin):
         self._prepare(pbw_path)
 
     def _prepare(self, pbw_path):
-        self._bundle = PebbleBundle(pbw_path, hardware=self._pebble.watch_info.running.hardware_platform)
+        self._bundle = PebbleBundle(
+            pbw_path, hardware=self._pebble.watch_info.running.hardware_platform
+        )
         if not self._bundle.is_app_bundle:
             raise AppInstallError("This is not an app bundle.")
 
-        self.total_size = self._bundle.zip.getinfo(self._bundle.get_app_path()).file_size
+        self.total_size = self._bundle.zip.getinfo(
+            self._bundle.get_app_path()
+        ).file_size
         if self._bundle.has_resources:
-            self.total_size += self._bundle.zip.getinfo(self._bundle.get_resource_path()).file_size
+            self.total_size += self._bundle.zip.getinfo(
+                self._bundle.get_resource_path()
+            ).file_size
 
         if self._bundle.has_worker:
-            self.total_size += self._bundle.zip.getinfo(self._bundle.get_worker_path()).file_size
+            self.total_size += self._bundle.zip.getinfo(
+                self._bundle.get_worker_path()
+            ).file_size
 
     def install(self, force_install=False):
         """
@@ -71,25 +96,40 @@ class AppInstaller(EventSourceMixin):
 
     def _install_modern(self):
         metadata = self._bundle.get_app_metadata()
-        app_uuid = metadata['uuid']
-        blob_packet = AppMetadata(uuid=app_uuid, flags=metadata['flags'], icon=metadata['icon_resource_id'],
-                                  app_version_major=metadata['app_version_major'],
-                                  app_version_minor=metadata['app_version_minor'],
-                                  sdk_version_major=metadata['sdk_version_major'],
-                                  sdk_version_minor=metadata['sdk_version_minor'],
-                                  app_face_bg_color=0, app_face_template_id=0, app_name=metadata['app_name'])
+        app_uuid = metadata["uuid"]
+        blob_packet = AppMetadata(
+            uuid=app_uuid,
+            flags=metadata["flags"],
+            icon=metadata["icon_resource_id"],
+            app_version_major=metadata["app_version_major"],
+            app_version_minor=metadata["app_version_minor"],
+            sdk_version_major=metadata["sdk_version_major"],
+            sdk_version_minor=metadata["sdk_version_minor"],
+            app_face_bg_color=0,
+            app_face_template_id=0,
+            app_name=metadata["app_name"],
+        )
 
-        result = SyncWrapper(self._blobdb.insert, BlobDatabaseID.App, app_uuid, blob_packet.serialise()).wait()
+        result = SyncWrapper(
+            self._blobdb.insert, BlobDatabaseID.App, app_uuid, blob_packet.serialise()
+        ).wait()
         if result != BlobStatus.Success:
             raise AppInstallError("BlobDB error: {!s}".format(result))
 
         # Start the app.
-        app_fetch = self._pebble.send_and_read(AppRunState(data=AppRunStateStart(uuid=app_uuid)), AppFetchRequest)
+        app_fetch = self._pebble.send_and_read(
+            AppRunState(data=AppRunStateStart(uuid=app_uuid)), AppFetchRequest
+        )
         if app_fetch.uuid != app_uuid:
-            self._pebble.send_packet(AppFetchResponse(response=AppFetchStatus.InvalidUUID))
-            raise AppInstallError("App requested the wrong UUID! Asked for {}; expected {}".format(
-                app_fetch.uuid, app_uuid))
-        self._broadcast_event('progress', 0, self.total_sent, self.total_size)
+            self._pebble.send_packet(
+                AppFetchResponse(response=AppFetchStatus.InvalidUUID)
+            )
+            raise AppInstallError(
+                "App requested the wrong UUID! Asked for {}; expected {}".format(
+                    app_fetch.uuid, app_uuid
+                )
+            )
+        self._broadcast_event("progress", 0, self.total_sent, self.total_size)
 
         # Send the app over
         binary = self._bundle.zip.read(self._bundle.get_app_path())
@@ -110,15 +150,19 @@ class AppInstaller(EventSourceMixin):
 
     def _install_legacy2(self):
         metadata = self._bundle.get_app_metadata()
-        app_uuid = metadata['uuid']
+        app_uuid = metadata["uuid"]
 
         # We don't really care if this worked; we're just waiting for it.
-        self._pebble.send_and_read(LegacyAppInstallRequest(data=LegacyUpgradeAppUUID(uuid=app_uuid)),
-                                   LegacyAppInstallResponse)
+        self._pebble.send_and_read(
+            LegacyAppInstallRequest(data=LegacyUpgradeAppUUID(uuid=app_uuid)),
+            LegacyAppInstallResponse,
+        )
 
         # Find somewhere to install to.
-        result = self._pebble.send_and_read(LegacyAppInstallRequest(data=LegacyBankInfoRequest()),
-                                            LegacyAppInstallResponse).data
+        result = self._pebble.send_and_read(
+            LegacyAppInstallRequest(data=LegacyBankInfoRequest()),
+            LegacyAppInstallResponse,
+        ).data
         assert isinstance(result, LegacyBankInfoResponse)
         first_free = 0
         for app in result.apps:
@@ -141,14 +185,25 @@ class AppInstaller(EventSourceMixin):
             self._send_part_legacy2(PutBytesType.Worker, worker, first_free)
 
         # Mark it as available
-        self._pebble.send_and_read(LegacyAppInstallRequest(data=LegacyAppAvailable(bank=first_free, vibrate=True)),
-                                   LegacyAppInstallResponse)
+        self._pebble.send_and_read(
+            LegacyAppInstallRequest(
+                data=LegacyAppAvailable(bank=first_free, vibrate=True)
+            ),
+            LegacyAppInstallResponse,
+        )
 
         # Launch it (which is painful on 2.x).
-        appmessage = AppMessageService(self._pebble, message_type=LegacyAppLaunchMessage)
-        appmessage.send_message(app_uuid, {
-            LegacyAppLaunchMessage.Keys.RunState: AMUint8(LegacyAppLaunchMessage.States.Running)
-        })
+        appmessage = AppMessageService(
+            self._pebble, message_type=LegacyAppLaunchMessage
+        )
+        appmessage.send_message(
+            app_uuid,
+            {
+                LegacyAppLaunchMessage.Keys.RunState: AMUint8(
+                    LegacyAppLaunchMessage.States.Running
+                )
+            },
+        )
         appmessage.shutdown()
 
     def _send_part_legacy2(self, type, object, bank):
@@ -158,4 +213,4 @@ class AppInstaller(EventSourceMixin):
 
     def _handle_progress(self, sent, total_sent, total_length):
         self.total_sent += sent
-        self._broadcast_event('progress', sent, self.total_sent, self.total_size)
+        self._broadcast_event("progress", sent, self.total_sent, self.total_size)

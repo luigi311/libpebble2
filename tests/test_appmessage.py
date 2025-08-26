@@ -2,21 +2,27 @@ from uuid import UUID
 from unittest.mock import Mock
 
 from libpebble2.services.appmessage import AppMessageService
-from libpebble2.protocol.appmessage import AppMessage, AppMessagePush, AppMessageACK, AppMessageTuple
+from libpebble2.protocol.appmessage import (
+    AppMessage,
+    AppMessagePush,
+    AppMessageACK,
+    AppMessageTuple,
+)
 
 
 def test_receive_appmessage_string():
     pebble = Mock()
 
     calls = 0
+
     def handle_result(txid, app_uuid, result):
         nonlocal calls
         assert app_uuid == UUID(int=128)
         assert txid == 42
         assert result == {
             14: "hello!",
-            15: "éclair",             # null-terminated -> trailing 'foo' is ignored
-            16: "hello\uFFFDworld",   # invalid UTF-8 -> U+FFFD replacement char
+            15: "éclair",  # null-terminated -> trailing 'foo' is ignored
+            16: "hello\ufffdworld",  # invalid UTF-8 -> U+FFFD replacement char
         }
         calls += 1
 
@@ -34,7 +40,9 @@ def test_receive_appmessage_string():
             data=AppMessagePush(
                 uuid=UUID(int=128),
                 dictionary=[
-                    AppMessageTuple(key=14, type=AppMessageTuple.Type.CString, data=b"hello!\x00"),
+                    AppMessageTuple(
+                        key=14, type=AppMessageTuple.Type.CString, data=b"hello!\x00"
+                    ),
                     AppMessageTuple(
                         key=15,
                         type=AppMessageTuple.Type.CString,

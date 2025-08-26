@@ -1,4 +1,4 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 import json
 import os
@@ -12,40 +12,43 @@ __all__ = ["PebbleBundle"]
 
 
 class PebbleBundle(object):
-    MANIFEST_FILENAME = 'manifest.json'
-    UNIVERSAL_FILES = {'appinfo.json', 'pebble-js-app.js'}
+    MANIFEST_FILENAME = "manifest.json"
+    UNIVERSAL_FILES = {"appinfo.json", "pebble-js-app.js"}
 
     STRUCT_DEFINITION = [
-            '8s',   # header
-            '2B',   # struct version
-            '2B',   # sdk version
-            '2B',   # app version
-            'H',    # size
-            'I',    # offset
-            'I',    # crc
-            '32s',  # app name
-            '32s',  # company name
-            'I',    # icon resource id
-            'I',    # symbol table address
-            'I',    # flags
-            'I',    # num relocation list entries
-            '16s'   # uuid
+        "8s",  # header
+        "2B",  # struct version
+        "2B",  # sdk version
+        "2B",  # app version
+        "H",  # size
+        "I",  # offset
+        "I",  # crc
+        "32s",  # app name
+        "32s",  # company name
+        "I",  # icon resource id
+        "I",  # symbol table address
+        "I",  # flags
+        "I",  # num relocation list entries
+        "16s",  # uuid
     ]
 
     PLATFORM_PATHS = {
-        'unknown': ('',),
-        'aplite': ('aplite/', ''),  # this will fail if you have a dual aplite2/3 app and try
-                                    # installing on 2.x. Such apps are unsupported, so this is okay.
-        'basalt': ('basalt/', ''),
-        'chalk': ('chalk/',),
-        'diorite': ('diorite/', 'aplite/', ''),
-        'emery': ('emery/', 'basalt/', ''),
+        "unknown": ("",),
+        "aplite": (
+            "aplite/",
+            "",
+        ),  # this will fail if you have a dual aplite2/3 app and try
+        # installing on 2.x. Such apps are unsupported, so this is okay.
+        "basalt": ("basalt/", ""),
+        "chalk": ("chalk/",),
+        "diorite": ("diorite/", "aplite/", ""),
+        "emery": ("emery/", "basalt/", ""),
     }
 
     MAX_COMPATIBILITY_VERSIONS = {
-        'basalt': {'': 0x16},
-        'diorite': {'aplite/': 0x50, '': 0x16},
-        'emery': {'basalt/': 0x54, '': 0x16},
+        "basalt": {"": 0x16},
+        "diorite": {"aplite/": 0x50, "": 0x16},
+        "emery": {"basalt/": 0x54, "": 0x16},
     }
 
     def __init__(self, bundle_path, hardware=PebbleHardware.UNKNOWN):
@@ -60,7 +63,7 @@ class PebbleBundle(object):
         self.header = None
         self._zip_contents = set(self.zip.namelist())
 
-        self.app_metadata_struct = struct.Struct(''.join(self.STRUCT_DEFINITION))
+        self.app_metadata_struct = struct.Struct("".join(self.STRUCT_DEFINITION))
         self.app_metadata_length_bytes = self.app_metadata_struct.size
 
         self.print_pbl_logs = False
@@ -99,7 +102,7 @@ class PebbleBundle(object):
             if max_version is None:
                 return True
             metadata = self.get_app_metadata()
-            return metadata['sdk_version_minor'] < max_version
+            return metadata["sdk_version_minor"] < max_version
         return True
 
     def get_manifest(self):
@@ -107,39 +110,45 @@ class PebbleBundle(object):
             return self.manifest
 
         if self.get_real_path(self.MANIFEST_FILENAME) not in self.zip.namelist():
-            raise Exception("Could not find {}; are you sure this is a PebbleBundle?".format(self.MANIFEST_FILENAME))
+            raise Exception(
+                "Could not find {}; are you sure this is a PebbleBundle?".format(
+                    self.MANIFEST_FILENAME
+                )
+            )
 
-        self.manifest = json.loads(self.zip.read(self.get_real_path(self.MANIFEST_FILENAME)).decode('utf-8'))
+        self.manifest = json.loads(
+            self.zip.read(self.get_real_path(self.MANIFEST_FILENAME)).decode("utf-8")
+        )
         return self.manifest
 
     def get_app_metadata(self):
         if self.header:
             return self.header
 
-        app_manifest = self.get_manifest()['application']
+        app_manifest = self.get_manifest()["application"]
 
-        app_bin = self.zip.open(self.get_real_path(app_manifest['name'])).read()
+        app_bin = self.zip.open(self.get_real_path(app_manifest["name"])).read()
 
-        header = app_bin[0:self.app_metadata_length_bytes]
+        header = app_bin[0 : self.app_metadata_length_bytes]
         values = self.app_metadata_struct.unpack(header)
         self.header = {
-            'sentinel': values[0],
-            'struct_version_major': values[1],
-            'struct_version_minor': values[2],
-            'sdk_version_major': values[3],
-            'sdk_version_minor': values[4],
-            'app_version_major': values[5],
-            'app_version_minor': values[6],
-            'app_size': values[7],
-            'offset': values[8],
-            'crc': values[9],
-            'app_name': values[10].rstrip(b'\0').decode('utf-8'),
-            'company_name': values[11].rstrip(b'\0').decode('utf-8'),
-            'icon_resource_id': values[12],
-            'symbol_table_addr': values[13],
-            'flags': values[14],
-            'num_relocation_entries': values[15],
-            'uuid': uuid.UUID(bytes=values[16])
+            "sentinel": values[0],
+            "struct_version_major": values[1],
+            "struct_version_minor": values[2],
+            "sdk_version_major": values[3],
+            "sdk_version_minor": values[4],
+            "app_version_major": values[5],
+            "app_version_minor": values[6],
+            "app_size": values[7],
+            "offset": values[8],
+            "crc": values[9],
+            "app_name": values[10].rstrip(b"\0").decode("utf-8"),
+            "company_name": values[11].rstrip(b"\0").decode("utf-8"),
+            "icon_resource_id": values[12],
+            "symbol_table_addr": values[13],
+            "flags": values[14],
+            "num_relocation_entries": values[15],
+            "uuid": uuid.UUID(bytes=values[16]),
         }
         return self.header
 
@@ -148,53 +157,53 @@ class PebbleBundle(object):
 
     @property
     def is_firmware_bundle(self):
-        return 'firmware' in self.get_manifest()
+        return "firmware" in self.get_manifest()
 
     @property
     def is_app_bundle(self):
-        return 'application' in self.get_manifest()
+        return "application" in self.get_manifest()
 
     @property
     def has_resources(self):
-        return 'resources' in self.get_manifest()
+        return "resources" in self.get_manifest()
 
     @property
     def has_worker(self):
-        return 'worker' in self.get_manifest()
+        return "worker" in self.get_manifest()
 
     @property
     def has_javascript(self):
-        return 'js' in self.get_manifest()
+        return "js" in self.get_manifest()
 
     def get_firmware_info(self):
         if not self.is_firmware_bundle:
             return None
 
-        return self.get_manifest()['firmware']
+        return self.get_manifest()["firmware"]
 
     def get_application_info(self):
         if not self.is_app_bundle:
             return None
 
-        return self.get_manifest()['application']
+        return self.get_manifest()["application"]
 
     def get_resources_info(self):
         if not self.has_resources:
             return None
 
-        return self.get_manifest()['resources']
+        return self.get_manifest()["resources"]
 
     def get_worker_info(self):
         if not self.is_app_bundle or not self.has_worker:
             return None
 
-        return self.get_manifest()['worker']
+        return self.get_manifest()["worker"]
 
     def get_app_path(self):
-        return self.get_real_path(self.get_application_info()['name'])
+        return self.get_real_path(self.get_application_info()["name"])
 
     def get_resource_path(self):
-        return self.get_real_path(self.get_resources_info()['name'])
+        return self.get_real_path(self.get_resources_info()["name"])
 
     def get_worker_path(self):
-        return self.get_real_path(self.get_worker_info()['name'])
+        return self.get_real_path(self.get_worker_info()["name"])

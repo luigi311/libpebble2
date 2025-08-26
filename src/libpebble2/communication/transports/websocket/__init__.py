@@ -1,11 +1,16 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 import socket
 import struct
 import websocket
 
 from .. import BaseTransport, MessageTarget, MessageTargetWatch
-from .protocol import WebSocketRelayToWatch, WebSocketRelayFromWatch, endpoints, from_watch
+from .protocol import (
+    WebSocketRelayToWatch,
+    WebSocketRelayFromWatch,
+    endpoints,
+    from_watch,
+)
 from libpebble2.exceptions import ConnectionError, PebbleError
 
 
@@ -14,6 +19,7 @@ class MessageTargetPhone(MessageTarget):
     Indicates that the message is directed at a connected phone running the Pebble mobile app. For this purpose,
     `pypkjs <https://github.com/pebble/pypkjs>`_ counts as a phone.
     """
+
     pass
 
 
@@ -24,6 +30,7 @@ class WebsocketTransport(BaseTransport):
 
     :param url: The WebSocket URL to connect to, in standard format (e.g. ``ws://localhost:9000/``)
     """
+
     must_initialise = False
 
     def __init__(self, url):
@@ -51,16 +58,18 @@ class WebsocketTransport(BaseTransport):
         handlers[type(target)](message)
 
     def _send_to_watch(self, message):
-        self.send_packet(WebSocketRelayToWatch(payload=message), target=MessageTargetPhone())
+        self.send_packet(
+            WebSocketRelayToWatch(payload=message), target=MessageTargetPhone()
+        )
 
     def _send_to_phone(self, message):
-        message = struct.pack('B', endpoints[type(message)]) + message.serialise()
+        message = struct.pack("B", endpoints[type(message)]) + message.serialise()
         self.ws.send_binary(message)
 
     def read_packet(self):
         opcode, message = self.ws.recv_data()
         if opcode == websocket.ABNF.OPCODE_BINARY:
-            endpoint, = struct.unpack_from('B', message, 0)
+            (endpoint,) = struct.unpack_from("B", message, 0)
             if from_watch.get(endpoint, None) == WebSocketRelayFromWatch:
                 return MessageTargetWatch(), message[1:]
             else:

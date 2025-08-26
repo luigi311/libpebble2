@@ -1,10 +1,17 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from .base import PebblePacket
 from .base.types import Boolean, FixedString, Uint16, Uint32, Uint8, Union, UUID
 
-__all__ = ["RequestLogs", "LogMessage", "LogMessageDone", "NoLogMessages", "LogDumpShipping", "AppLogShippingControl",
-           "AppLogMessage"]
+__all__ = [
+    "RequestLogs",
+    "LogMessage",
+    "LogMessageDone",
+    "NoLogMessages",
+    "LogDumpShipping",
+    "AppLogShippingControl",
+    "AppLogMessage",
+]
 
 # Flash log messages
 
@@ -37,12 +44,16 @@ class LogDumpShipping(PebblePacket):
         endpoint = 2002
 
     command = Uint8()
-    data = Union(command, {
-        0x10: RequestLogs,
-        0x80: LogMessage,
-        0x81: LogMessageDone,
-        0x82: NoLogMessages,
-    })
+    data = Union(
+        command,
+        {
+            0x10: RequestLogs,
+            0x80: LogMessage,
+            0x81: LogMessageDone,
+            0x82: NoLogMessages,
+        },
+    )
+
 
 # App log messages
 

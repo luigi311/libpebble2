@@ -1,4 +1,4 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from enum import IntEnum
 
@@ -38,7 +38,10 @@ class PutBytes(EventSourceMixin):
         ``filename``.
     :type app_install_id: int
     """
-    def __init__(self, pebble, object_type, object, bank=None, filename="", app_install_id=None):
+
+    def __init__(
+        self, pebble, object_type, object, bank=None, filename="", app_install_id=None
+    ):
         self._pebble = pebble
         self._object_type = object_type
         self._object = object
@@ -46,7 +49,7 @@ class PutBytes(EventSourceMixin):
         self._filename = filename
         self._app_install_id = app_install_id
         if app_install_id is not None:
-            self._object_type |= (1 << 7)
+            self._object_type |= 1 << 7
         EventSourceMixin.__init__(self)
 
     def send(self):
@@ -75,11 +78,22 @@ class PutBytes(EventSourceMixin):
 
     def _prepare(self):
         if self._app_install_id is not None:
-            packet = transfers.PutBytesApp(data=transfers.PutBytesAppInit(
-                object_size=len(self._object), object_type=self._object_type, app_id=self._app_install_id))
+            packet = transfers.PutBytesApp(
+                data=transfers.PutBytesAppInit(
+                    object_size=len(self._object),
+                    object_type=self._object_type,
+                    app_id=self._app_install_id,
+                )
+            )
         else:
-            packet = transfers.PutBytes(data=transfers.PutBytesInit(
-                object_size=len(self._object), object_type=self._object_type, bank=self._bank, filename=self._filename))
+            packet = transfers.PutBytes(
+                data=transfers.PutBytesInit(
+                    object_size=len(self._object),
+                    object_type=self._object_type,
+                    bank=self._bank,
+                    filename=self._filename,
+                )
+            )
         result = self._pebble.send_and_read(packet, transfers.PutBytesResponse)
         self._assert_success(result)
         return result.cookie
@@ -88,17 +102,27 @@ class PutBytes(EventSourceMixin):
         sent = 0
         length = 2000
         while sent < len(self._object):
-            chunk = self._object[sent:sent+length]
-            packet = transfers.PutBytes(data=transfers.PutBytesPut(cookie=cookie, payload=chunk))
-            self._assert_success(self._pebble.send_and_read(packet, transfers.PutBytesResponse))
+            chunk = self._object[sent : sent + length]
+            packet = transfers.PutBytes(
+                data=transfers.PutBytesPut(cookie=cookie, payload=chunk)
+            )
+            self._assert_success(
+                self._pebble.send_and_read(packet, transfers.PutBytesResponse)
+            )
             sent += len(chunk)
             self._broadcast_event("progress", len(chunk), sent, len(self._object))
 
     def _commit(self, cookie):
         crc = stm32_crc.crc32(self._object)
-        packet = transfers.PutBytes(data=transfers.PutBytesCommit(cookie=cookie, object_crc=crc))
-        self._assert_success(self._pebble.send_and_read(packet, transfers.PutBytesResponse))
+        packet = transfers.PutBytes(
+            data=transfers.PutBytesCommit(cookie=cookie, object_crc=crc)
+        )
+        self._assert_success(
+            self._pebble.send_and_read(packet, transfers.PutBytesResponse)
+        )
 
     def _install(self, cookie):
         packet = transfers.PutBytes(data=transfers.PutBytesInstall(cookie=cookie))
-        self._assert_success(self._pebble.send_and_read(packet, transfers.PutBytesResponse))
+        self._assert_success(
+            self._pebble.send_and_read(packet, transfers.PutBytesResponse)
+        )

@@ -1,4 +1,4 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from binascii import hexlify
 from collections import namedtuple
@@ -11,15 +11,23 @@ from .transports import BaseTransport, MessageTargetWatch
 from libpebble2.events.threaded import ThreadedEventHandler
 from libpebble2.exceptions import PacketDecodeError, ConnectionError, IncompleteMessage
 from libpebble2.protocol.base import PebblePacket, PacketType
-from libpebble2.protocol.system import (PhoneAppVersion, AppVersionResponse, WatchVersion, WatchVersionRequest,
-                                        WatchVersionResponse, WatchModel, ModelRequest, Model)
+from libpebble2.protocol.system import (
+    PhoneAppVersion,
+    AppVersionResponse,
+    WatchVersion,
+    WatchVersionRequest,
+    WatchVersionResponse,
+    WatchModel,
+    ModelRequest,
+    Model,
+)
 from libpebble2.util.hardware import PebbleHardware
 
 logger = logging.getLogger("libpebble2.communication")
 
-_EventType = Enum('_EventType', ('Watch', 'Transport'))
+_EventType = Enum("_EventType", ("Watch", "Transport"))
 
-FirmwareVersion = namedtuple('FirmwareVersion', ('major', 'minor', 'patch', 'suffix'))
+FirmwareVersion = namedtuple("FirmwareVersion", ("major", "minor", "patch", "suffix"))
 """
 Represents a firmware version, in the format ``major.minor.patch-suffix``.
 """
@@ -36,10 +44,11 @@ class PebbleConnection(object):
     :param log_protocol_level: int If not None, the log level at which to log raw messages sent and received.
     :type log_protocol_level: int
     """
+
     def __init__(self, transport, log_protocol_level=None, log_packet_level=None):
         assert isinstance(transport, BaseTransport)
         self.transport = transport
-        self.pending_bytes = b''
+        self.pending_bytes = b""
         self.event_handler = ThreadedEventHandler()
         self._register_internal_handlers()
         self._watch_info = None
@@ -97,7 +106,9 @@ class PebbleConnection(object):
         # If called prior to connecting, do so now.
         if not self.connected:
             self.connect()
-        thread = threading.Thread(target=self.run_sync, daemon=True, name="PebbleConnection")
+        thread = threading.Thread(
+            target=self.run_sync, daemon=True, name="PebbleConnection"
+        )
         thread.start()
         self.fetch_watch_info()
 
@@ -124,11 +135,11 @@ class PebbleConnection(object):
                 # we didn't wipe anything). We therefore parse the packet length manually and skip ahead that far.
                 # If the expected length is 0, we wipe everything to ensure forward motion (but we are quite probably
                 # screwed).
-                expected_length, = struct.unpack('!H', message[:2])
+                (expected_length,) = struct.unpack("!H", message[:2])
                 if expected_length == 0:
-                    self.pending_bytes = b''
+                    self.pending_bytes = b""
                 else:
-                    self.pending_bytes = message[expected_length + 4:]
+                    self.pending_bytes = message[expected_length + 4 :]
                 raise
 
             self.event_handler.broadcast_event("raw_inbound", message[:length])
@@ -148,7 +159,9 @@ class PebbleConnection(object):
         :type origin: .MessageTarget
         :param message: The message from the transport
         """
-        self.event_handler.broadcast_event((_EventType.Transport, type(origin), type(message)), message)
+        self.event_handler.broadcast_event(
+            (_EventType.Transport, type(origin), type(message)), message
+        )
 
     def register_transport_endpoint(self, origin, message_type, handler):
         """
@@ -161,7 +174,9 @@ class PebbleConnection(object):
         :type handler: callable
         :return: A handle that can be passed to :meth:`unregister_endpoint` to remove the handler.
         """
-        return self.event_handler.register_handler((_EventType.Transport, origin, message_type), handler)
+        return self.event_handler.register_handler(
+            (_EventType.Transport, origin, message_type), handler
+        )
 
     def register_endpoint(self, endpoint, handler):
         """
@@ -173,7 +188,9 @@ class PebbleConnection(object):
         :type handler: callable
         :return: A handle that can be passed to :meth:`unregister_endpoint` to remove the handler.
         """
-        return self.event_handler.register_handler((_EventType.Watch, endpoint), handler)
+        return self.event_handler.register_handler(
+            (_EventType.Watch, endpoint), handler
+        )
 
     def register_raw_outbound_handler(self, handler):
         """
@@ -221,7 +238,9 @@ class PebbleConnection(object):
         :param timeout: The maximum time to wait before raising :exc:`.TimeoutError`.
         :return: The message read from the endpoint; of the same type as passed to ``endpoint``.
         """
-        return self.event_handler.wait_for_event((_EventType.Watch, endpoint), timeout=timeout)
+        return self.event_handler.wait_for_event(
+            (_EventType.Watch, endpoint), timeout=timeout
+        )
 
     def get_endpoint_queue(self, endpoint):
         """
@@ -249,7 +268,9 @@ class PebbleConnection(object):
         :param timeout: The maximum time to wait before raising :exc:`.TimeoutError`.
         :return: The object read from the transport; of the same type as passed to ``message_type``.
         """
-        return self.event_handler.wait_for_event((_EventType.Transport, origin, message_type), timeout=timeout)
+        return self.event_handler.wait_for_event(
+            (_EventType.Transport, origin, message_type), timeout=timeout
+        )
 
     def send_packet(self, packet):
         """
@@ -303,16 +324,18 @@ class PebbleConnection(object):
             self.register_endpoint(PhoneAppVersion, self._app_version_response)
 
     def _app_version_response(self, packet):
-        packet = PhoneAppVersion(message=AppVersionResponse(
-            protocol_version=0xFFFFFFFF,
-            session_caps=0x80000000,
-            platform_flags=50,
-            response_version=2,
-            major_version=3,
-            minor_version=0,
-            bugfix_version=0,
-            protocol_caps=0xFFFFFFFFFFFFFFFF
-        ))
+        packet = PhoneAppVersion(
+            message=AppVersionResponse(
+                protocol_version=0xFFFFFFFF,
+                session_caps=0x80000000,
+                platform_flags=50,
+                response_version=2,
+                major_version=3,
+                minor_version=0,
+                bugfix_version=0,
+                protocol_caps=0xFFFFFFFFFFFFFFFF,
+            )
+        )
         self.send_packet(packet)
 
     def fetch_watch_info(self):
@@ -320,7 +343,9 @@ class PebbleConnection(object):
         This method should be called before accessing :attr:`watch_info`, :attr:`firmware_version`
         or :attr:`watch_platform`. Blocks until it has fetched the required information.
         """
-        self._watch_info = self.send_and_read(WatchVersion(data=WatchVersionRequest()), WatchVersion).data
+        self._watch_info = self.send_and_read(
+            WatchVersion(data=WatchVersionRequest()), WatchVersion
+        ).data
 
     @property
     def watch_info(self):
@@ -349,14 +374,14 @@ class PebbleConnection(object):
         :rtype: .WatchVersionResponse
         """
         version = self.watch_info.running.version_tag[1:]
-        parts = version.split('-', 1)
-        points = [int(x) for x in parts[0].split('.')]
+        parts = version.split("-", 1)
+        points = [int(x) for x in parts[0].split(".")]
         while len(points) < 3:
             points.append(0)
         if len(parts) == 2:
             suffix = parts[1]
         else:
-            suffix = ''
+            suffix = ""
         return FirmwareVersion(*(points + [suffix]))
 
     @property
@@ -367,9 +392,11 @@ class PebbleConnection(object):
         :rtype: ~libpebble2.protocol.system.Model
         """
         if self._watch_model is None:
-            info_bytes = self.send_and_read(WatchModel(data=ModelRequest()), WatchModel).data.data
+            info_bytes = self.send_and_read(
+                WatchModel(data=ModelRequest()), WatchModel
+            ).data.data
             if len(info_bytes) == 4:
-                self._watch_model, = struct.unpack('>I', info_bytes)
+                (self._watch_model,) = struct.unpack(">I", info_bytes)
             else:
                 self._watch_model = Model.Unknown
         return self._watch_model
@@ -385,4 +412,6 @@ class PebbleConnection(object):
 
         :rtype: str
         """
-        return PebbleHardware.hardware_platform(self.watch_info.running.hardware_platform)
+        return PebbleHardware.hardware_platform(
+            self.watch_info.running.hardware_platform
+        )

@@ -1,4 +1,4 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 
 class PebbleHardware(object):
@@ -29,32 +29,32 @@ class PebbleHardware(object):
     ROBERT_BB2 = 0xF7
 
     PLATFORMS = {
-        UNKNOWN: 'unknown',
-        TINTIN_EV1: 'aplite',
-        TINTIN_EV2: 'aplite',
-        TINTIN_EV2_3: 'aplite',
-        TINTIN_EV2_4: 'aplite',
-        TINTIN_V1_5: 'aplite',
-        BIANCA: 'aplite',
-        SNOWY_EVT2: 'basalt',
-        SNOWY_DVT: 'basalt',
-        BOBBY_SMILES: 'basalt',
-        SPALDING_EVT: 'chalk',
-        SPALDING: 'chalk',
-        SILK_EVT: 'diorite',
-        ROBERT_EVT: 'emery',
-        SILK: 'diorite',
-        TINTIN_BB: 'aplite',
-        TINTIN_BB2: 'aplite',
-        SNOWY_BB: 'basalt',
-        SNOWY_BB2: 'basalt',
-        SPALDING_BB2: 'chalk',
-        SILK_BB: 'diorite',
-        ROBERT_BB: 'emery',
-        SILK_BB2: 'diorite',
-        ROBERT_BB2: 'emery',
+        UNKNOWN: "unknown",
+        TINTIN_EV1: "aplite",
+        TINTIN_EV2: "aplite",
+        TINTIN_EV2_3: "aplite",
+        TINTIN_EV2_4: "aplite",
+        TINTIN_V1_5: "aplite",
+        BIANCA: "aplite",
+        SNOWY_EVT2: "basalt",
+        SNOWY_DVT: "basalt",
+        BOBBY_SMILES: "basalt",
+        SPALDING_EVT: "chalk",
+        SPALDING: "chalk",
+        SILK_EVT: "diorite",
+        ROBERT_EVT: "emery",
+        SILK: "diorite",
+        TINTIN_BB: "aplite",
+        TINTIN_BB2: "aplite",
+        SNOWY_BB: "basalt",
+        SNOWY_BB2: "basalt",
+        SPALDING_BB2: "chalk",
+        SILK_BB: "diorite",
+        ROBERT_BB: "emery",
+        SILK_BB2: "diorite",
+        ROBERT_BB2: "emery",
     }
 
     @classmethod
     def hardware_platform(cls, hardware):
-        return cls.PLATFORMS.get(hardware, 'unknown')
+        return cls.PLATFORMS.get(hardware, "unknown")

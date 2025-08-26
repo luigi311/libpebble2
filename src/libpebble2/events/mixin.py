@@ -1,4 +1,4 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from libpebble2.events.threaded import ThreadedEventHandler
 
@@ -7,6 +7,7 @@ class EventSourceMixin(object):
     """
     A convenient mixin to save on repeatedly exposing generic event handler functionality.
     """
+
     def __init__(self):
         self.__handler = ThreadedEventHandler()
 

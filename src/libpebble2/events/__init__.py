@@ -1,4 +1,4 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from abc import ABCMeta, abstractmethod
 
@@ -8,6 +8,7 @@ class BaseEventHandler(metaclass=ABCMeta):
     An event handler, used throughout libpebble2 to indicate that something happened. These should ordinarily not need
     to be directly invoked by a client of libpebble2.
     """
+
     @abstractmethod
     def register_handler(self, event, handler):
         """
@@ -86,5 +87,3 @@ class BaseEventQueue(metaclass=ABCMeta):
         Iterate over events in the queue. Blocks if no more items are available.
         """
         pass
-
-

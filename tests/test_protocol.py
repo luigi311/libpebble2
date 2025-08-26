@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__author__ = 'katharine'
+__author__ = "katharine"
 
 import pytest
 from enum import Enum
@@ -7,7 +7,24 @@ import uuid
 
 from libpebble2.exceptions import PacketDecodeError, PacketEncodeError
 from libpebble2.protocol.base import PebblePacket
-from libpebble2.protocol.base.types import BinaryArray, Embed, Int8, Optional, Uint8, Int16, Uint16, Boolean, UUID, Padding, PascalString, NullTerminatedString, FixedString, FixedList, PascalList, Union
+from libpebble2.protocol.base.types import (
+    BinaryArray,
+    Embed,
+    Int8,
+    Optional,
+    Uint8,
+    Int16,
+    Uint16,
+    Boolean,
+    UUID,
+    Padding,
+    PascalString,
+    NullTerminatedString,
+    FixedString,
+    FixedList,
+    PascalList,
+    Union,
+)
 
 
 def unhex(string: str) -> bytes:
@@ -17,8 +34,9 @@ def unhex(string: str) -> bytes:
 
 class PacketUnderTest(PebblePacket):
     command = Uint8()
-    length  = Uint8()
-    count   = Uint8()
+    length = Uint8()
+    count = Uint8()
+
 
 @pytest.fixture
 def packet():
@@ -27,51 +45,78 @@ def packet():
 
 def do_serialise_test(packet, field, tuples):
     for endianness, input, output in tuples:
-        assert field.value_to_bytes(packet, input, default_endianness=str(endianness)) == output
+        assert (
+            field.value_to_bytes(packet, input, default_endianness=str(endianness))
+            == output
+        )
 
 
 def test_int8_serialise(packet):
-    do_serialise_test(packet, Int8(), [
-        ('<', 0, b'\x00'),
-        ('>', 127, b'\x7f'),
-        ('!', -128, b'\x80'),
-        ('!', -1, b'\xff'),
-    ])
+    do_serialise_test(
+        packet,
+        Int8(),
+        [
+            ("<", 0, b"\x00"),
+            (">", 127, b"\x7f"),
+            ("!", -128, b"\x80"),
+            ("!", -1, b"\xff"),
+        ],
+    )
 
 
 def test_uint8_serialise(packet):
-    do_serialise_test(packet, Uint8(), [
-        ('<', 0, b'\x00'),
-        ('>', 255, b'\xff'),
-    ])
+    do_serialise_test(
+        packet,
+        Uint8(),
+        [
+            ("<", 0, b"\x00"),
+            (">", 255, b"\xff"),
+        ],
+    )
 
 
 def test_int16_serialise(packet):
-    do_serialise_test(packet, Int16(), [
-        ('>', 32767, b'\x7F\xFF'),
-        ('<', 32767, b'\xFF\x7F'),
-        ('<', -32768, b'\x00\x80'),
-    ])
+    do_serialise_test(
+        packet,
+        Int16(),
+        [
+            (">", 32767, b"\x7f\xff"),
+            ("<", 32767, b"\xff\x7f"),
+            ("<", -32768, b"\x00\x80"),
+        ],
+    )
 
-    do_serialise_test(packet, Int16(endianness='<'), [
-        ('>', 32767, b'\xFF\x7F'),
-        ('<', 32767, b'\xFF\x7F'),
-        ('<', -32768, b'\x00\x80'),
-    ])
+    do_serialise_test(
+        packet,
+        Int16(endianness="<"),
+        [
+            (">", 32767, b"\xff\x7f"),
+            ("<", 32767, b"\xff\x7f"),
+            ("<", -32768, b"\x00\x80"),
+        ],
+    )
 
 
 def test_uint16_serialise(packet):
-    do_serialise_test(packet, Uint16(), [
-        ('>', 65534, b'\xFF\xFE'),
-        ('<', 65534, b'\xFE\xFF'),
-        ('<', 0, b'\x00\x00'),
-    ])
+    do_serialise_test(
+        packet,
+        Uint16(),
+        [
+            (">", 65534, b"\xff\xfe"),
+            ("<", 65534, b"\xfe\xff"),
+            ("<", 0, b"\x00\x00"),
+        ],
+    )
 
-    do_serialise_test(packet, Uint16(endianness='<'), [
-        ('>', 65534, b'\xFE\xFF'),
-        ('<', 65534, b'\xFE\xFF'),
-        ('<', 0, b'\x00\x00'),
-    ])
+    do_serialise_test(
+        packet,
+        Uint16(endianness="<"),
+        [
+            (">", 65534, b"\xfe\xff"),
+            ("<", 65534, b"\xfe\xff"),
+            ("<", 0, b"\x00\x00"),
+        ],
+    )
 
 
 def test_uint8_enum_deserialise(packet):
@@ -80,7 +125,7 @@ def test_uint8_enum_deserialise(packet):
         Bar = 0x02
 
     field = Uint8(enum=TestEnum)
-    assert field.buffer_to_value(packet, b'\x01', 0) == (TestEnum.Foo, 1)
+    assert field.buffer_to_value(packet, b"\x01", 0) == (TestEnum.Foo, 1)
 
 
 def test_uint8_enum_deserialise_error(packet):
@@ -90,75 +135,87 @@ def test_uint8_enum_deserialise_error(packet):
 
     field = Uint8(enum=TestEnum)
     with pytest.raises(PacketDecodeError):
-        field.buffer_to_value(packet, b'\x03', 0)
+        field.buffer_to_value(packet, b"\x03", 0)
 
 
 def test_bool_serialise(packet):
     field = Boolean()
-    assert field.value_to_bytes(packet, True) == b'\x01'
-    assert field.value_to_bytes(packet, False) == b'\x00'
+    assert field.value_to_bytes(packet, True) == b"\x01"
+    assert field.value_to_bytes(packet, False) == b"\x00"
 
 
 def test_bool_deserialise(packet):
     field = Boolean()
-    assert field.buffer_to_value(packet, b'\x00', 0) == (False, 1)
-    assert field.buffer_to_value(packet, b'\x01', 0) == (True, 1)
+    assert field.buffer_to_value(packet, b"\x00", 0) == (False, 1)
+    assert field.buffer_to_value(packet, b"\x01", 0) == (True, 1)
 
 
 def test_bool_deserialise_offset(packet):
     field = Boolean()
-    assert field.buffer_to_value(packet, b'\x00\x00\x00\x01', 3) == (True, 1)
-    assert field.buffer_to_value(packet, b'\x01\x01\x01\x00', 3) == (False, 1)
+    assert field.buffer_to_value(packet, b"\x00\x00\x00\x01", 3) == (True, 1)
+    assert field.buffer_to_value(packet, b"\x01\x01\x01\x00", 3) == (False, 1)
 
 
 def test_bool_deserialise_nothing(packet):
     field = Boolean()
     with pytest.raises(PacketDecodeError):
-        field.buffer_to_value(packet, b'', 0)
+        field.buffer_to_value(packet, b"", 0)
     with pytest.raises(PacketDecodeError):
-        field.buffer_to_value(packet, b'\x01\x02', 2)
+        field.buffer_to_value(packet, b"\x01\x02", 2)
 
 
 def test_int16_deserialise(packet):
     field = Int16()
-    assert field.buffer_to_value(packet, b'\x00\x06', 0) == (6, 2)
-    assert field.buffer_to_value(packet, b'\xff\xff', 0) == (-1, 2)
-    assert field.buffer_to_value(packet, b'\xfe\xff', 0, default_endianness='<') == (-2, 2)
+    assert field.buffer_to_value(packet, b"\x00\x06", 0) == (6, 2)
+    assert field.buffer_to_value(packet, b"\xff\xff", 0) == (-1, 2)
+    assert field.buffer_to_value(packet, b"\xfe\xff", 0, default_endianness="<") == (
+        -2,
+        2,
+    )
 
 
 def test_int16_deserialised_override_endianness(packet):
-    field = Int16(endianness='<')
-    assert field.buffer_to_value(packet, b'\x06\x00', 0) == (6, 2)
-    assert field.buffer_to_value(packet, b'\xff\xff', 0) == (-1, 2)
-    assert field.buffer_to_value(packet, b'\xfe\xff', 0, default_endianness='<') == (-2, 2)
+    field = Int16(endianness="<")
+    assert field.buffer_to_value(packet, b"\x06\x00", 0) == (6, 2)
+    assert field.buffer_to_value(packet, b"\xff\xff", 0) == (-1, 2)
+    assert field.buffer_to_value(packet, b"\xfe\xff", 0, default_endianness="<") == (
+        -2,
+        2,
+    )
 
 
 def test_int16_deserialise_offset(packet):
     field = Int16()
-    assert field.buffer_to_value(packet, b'\xff\xff\x01\x00', 2) == (0x100, 2)
+    assert field.buffer_to_value(packet, b"\xff\xff\x01\x00", 2) == (0x100, 2)
 
 
 def test_int16_dserialise_nothing(packet):
     field = Int16()
     with pytest.raises(PacketDecodeError):
-        field.buffer_to_value(packet, b'', 0)
+        field.buffer_to_value(packet, b"", 0)
     with pytest.raises(PacketDecodeError):
-        field.buffer_to_value(packet, b'\xff', 0)
+        field.buffer_to_value(packet, b"\xff", 0)
     with pytest.raises(PacketDecodeError):
-        field.buffer_to_value(packet, b'\x00\xff\xff', 2)
+        field.buffer_to_value(packet, b"\x00\xff\xff", 2)
 
 
 def test_uuid_serialise(packet):
     field = UUID()
     some_uuid = uuid.UUID("01234567-8123-4123-4123-4123456789ab")
-    assert field.value_to_bytes(packet, some_uuid) == unhex("012345678123412341234123456789ab")
+    assert field.value_to_bytes(packet, some_uuid) == unhex(
+        "012345678123412341234123456789ab"
+    )
 
 
 def test_uuid_deserialise(packet):
     field = UUID()
     some_uuid = uuid.UUID("01234567-8123-4123-4123-4123456789ab")
-    assert field.buffer_to_value(packet, unhex("012345678123412341234123456789ab"), 0) == (some_uuid, 16)
-    assert field.buffer_to_value(packet, unhex("000000012345678123412341234123456789ab"), 3) == (some_uuid, 16)
+    assert field.buffer_to_value(
+        packet, unhex("012345678123412341234123456789ab"), 0
+    ) == (some_uuid, 16)
+    assert field.buffer_to_value(
+        packet, unhex("000000012345678123412341234123456789ab"), 3
+    ) == (some_uuid, 16)
 
 
 def test_uuid_deserialise_nothing(packet):
@@ -307,7 +364,7 @@ def packet_field(packet, field):
 
 
 def test_fixed_string_variable_length_serialise(packet):
-    field = FixedString(packet_field(packet, 'length'))
+    field = FixedString(packet_field(packet, "length"))
 
     field.prepare(packet, "foo")
     assert packet.length == 3
@@ -327,7 +384,7 @@ def test_fixed_string_variable_length_serialise(packet):
 
 
 def test_fixed_string_variable_length_deserialise(packet):
-    field = FixedString(packet_field(packet, 'length'))
+    field = FixedString(packet_field(packet, "length"))
     packet.length = 6
 
     assert field.buffer_to_value(packet, b"foobarbaz", 0) == ("foobar", 6)
@@ -352,11 +409,20 @@ def test_pascal_list_no_count_serialise(packet):
     field = PascalList(Foo)
 
     assert field.value_to_bytes(packet, []) == b""
-    assert field.value_to_bytes(packet, [Foo(foo=0xFFFF)]) == b"\x02\xFF\xFF"
-    assert field.value_to_bytes(packet, [Foo(foo=0x00FF)]) == b"\x02\x00\xFF"
-    assert field.value_to_bytes(packet, [Foo(foo=0x00FF), Foo(foo=0x00EE)]) == b"\x02\x00\xFF\x02\x00\xEE"
-    assert field.value_to_bytes(packet, [Foo(foo=0x00FF, bar="bar"), Foo(foo=0x00EE)]) == b"\x05\x00\xFFbar\x02\x00\xEE"
-    assert field.value_to_bytes(packet, [Foo(foo=0x00FF)], default_endianness='<') == b"\x02\xFF\x00"
+    assert field.value_to_bytes(packet, [Foo(foo=0xFFFF)]) == b"\x02\xff\xff"
+    assert field.value_to_bytes(packet, [Foo(foo=0x00FF)]) == b"\x02\x00\xff"
+    assert (
+        field.value_to_bytes(packet, [Foo(foo=0x00FF), Foo(foo=0x00EE)])
+        == b"\x02\x00\xff\x02\x00\xee"
+    )
+    assert (
+        field.value_to_bytes(packet, [Foo(foo=0x00FF, bar="bar"), Foo(foo=0x00EE)])
+        == b"\x05\x00\xffbar\x02\x00\xee"
+    )
+    assert (
+        field.value_to_bytes(packet, [Foo(foo=0x00FF)], default_endianness="<")
+        == b"\x02\xff\x00"
+    )
 
 
 def test_pascal_list_no_count_deserialise(packet):
@@ -368,20 +434,28 @@ def test_pascal_list_no_count_deserialise(packet):
 
     assert field.buffer_to_value(packet, b"eep", 3) == ([], 0)
     assert field.buffer_to_value(packet, b"", 0) == ([], 0)
-    assert field.buffer_to_value(packet, b"\x02\xFF\xFF", 0) == ([Foo(foo=0xFFFF)], 3)
-    assert field.buffer_to_value(packet, b"12345\x02\x00\xFF", 5) == ([Foo(foo=0x00FF)], 3)
-    assert field.buffer_to_value(packet, b"\x02\x00\xFF\x02\x00\xEE", 0) == ([Foo(foo=0x00FF), Foo(foo=0x00EE)], 6)
-    assert field.buffer_to_value(packet, b"\x05\x00\xFFbar\x02\x00\xEE", 0) == ([Foo(foo=0x00FF, bar="bar"),
-                                                                                 Foo(foo=0x00EE)], 9)
+    assert field.buffer_to_value(packet, b"\x02\xff\xff", 0) == ([Foo(foo=0xFFFF)], 3)
+    assert field.buffer_to_value(packet, b"12345\x02\x00\xff", 5) == (
+        [Foo(foo=0x00FF)],
+        3,
+    )
+    assert field.buffer_to_value(packet, b"\x02\x00\xff\x02\x00\xee", 0) == (
+        [Foo(foo=0x00FF), Foo(foo=0x00EE)],
+        6,
+    )
+    assert field.buffer_to_value(packet, b"\x05\x00\xffbar\x02\x00\xee", 0) == (
+        [Foo(foo=0x00FF, bar="bar"), Foo(foo=0x00EE)],
+        9,
+    )
     with pytest.raises(PacketDecodeError):
-        field.buffer_to_value(packet, b"\x02\xFF", 0)
+        field.buffer_to_value(packet, b"\x02\xff", 0)
 
 
 def test_pascal_list_count_serialise(packet):
     class Foo(PebblePacket):
         foo = Uint8()
 
-    field = PascalList(Foo, count=packet_field(packet, 'count'))
+    field = PascalList(Foo, count=packet_field(packet, "count"))
 
     field.prepare(packet, [Foo(foo=1)])
     assert packet.count == 1
@@ -396,7 +470,7 @@ def test_pascal_list_count_deserialise(packet):
     class Foo(PebblePacket):
         foo = Uint8()
 
-    field = PascalList(Foo, count=packet_field(packet, 'count'))
+    field = PascalList(Foo, count=packet_field(packet, "count"))
 
     packet.count = 0
     assert field.buffer_to_value(packet, b"eep", 0) == ([], 0)
@@ -405,7 +479,10 @@ def test_pascal_list_count_deserialise(packet):
     assert field.buffer_to_value(packet, b"foo\x01\x01nothing", 3) == ([Foo(foo=1)], 2)
 
     packet.count = 2
-    assert field.buffer_to_value(packet, b"foo\x01\x01\x01\x02nothing", 3) == ([Foo(foo=1), Foo(foo=2)], 4)
+    assert field.buffer_to_value(packet, b"foo\x01\x01\x01\x02nothing", 3) == (
+        [Foo(foo=1), Foo(foo=2)],
+        4,
+    )
 
 
 def test_fixed_list_packet_plain_serialise(packet):
@@ -414,10 +491,18 @@ def test_fixed_list_packet_plain_serialise(packet):
 
     field = FixedList(Foo)
 
-    assert field.value_to_bytes(packet, []) == b''
-    assert field.value_to_bytes(packet, [Foo(foo=0xAABB)]) == b'\xaa\xbb'
-    assert field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)]) == b'\xaa\xbb\xcc\xdd'
-    assert field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)], default_endianness='<') == b'\xbb\xaa\xdd\xcc'
+    assert field.value_to_bytes(packet, []) == b""
+    assert field.value_to_bytes(packet, [Foo(foo=0xAABB)]) == b"\xaa\xbb"
+    assert (
+        field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)])
+        == b"\xaa\xbb\xcc\xdd"
+    )
+    assert (
+        field.value_to_bytes(
+            packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)], default_endianness="<"
+        )
+        == b"\xbb\xaa\xdd\xcc"
+    )
 
 
 def test_fixed_list_packet_plain_deserialise(packet):
@@ -429,8 +514,14 @@ def test_fixed_list_packet_plain_deserialise(packet):
     assert field.buffer_to_value(packet, b"", 0) == ([], 0)
     assert field.buffer_to_value(packet, b"foo", 3) == ([], 0)
     assert field.buffer_to_value(packet, b"\xaa\xbb", 0) == ([Foo(foo=0xAABB)], 2)
-    assert field.buffer_to_value(packet, b"\xaa\xbb", 0, default_endianness='<') == ([Foo(foo=0xBBAA)], 2)
-    assert field.buffer_to_value(packet, b"\xaa\xbb\xcc\xdd", 0) == ([Foo(foo=0xAABB), Foo(foo=0xCCDD)], 4)
+    assert field.buffer_to_value(packet, b"\xaa\xbb", 0, default_endianness="<") == (
+        [Foo(foo=0xBBAA)],
+        2,
+    )
+    assert field.buffer_to_value(packet, b"\xaa\xbb\xcc\xdd", 0) == (
+        [Foo(foo=0xAABB), Foo(foo=0xCCDD)],
+        4,
+    )
 
     with pytest.raises(PacketDecodeError):
         field.buffer_to_value(packet, b"\xaa\xbb", 1)
@@ -439,10 +530,13 @@ def test_fixed_list_packet_plain_deserialise(packet):
 def test_fixed_list_field_plain_serialise(packet):
     field = FixedList(Uint16())
 
-    assert field.value_to_bytes(packet, []) == b''
-    assert field.value_to_bytes(packet, [0xAABB]) == b'\xaa\xbb'
-    assert field.value_to_bytes(packet, [0xAABB, 0xCCDD]) == b'\xaa\xbb\xcc\xdd'
-    assert field.value_to_bytes(packet, [0xAABB, 0xCCDD], default_endianness='<') == b'\xbb\xaa\xdd\xcc'
+    assert field.value_to_bytes(packet, []) == b""
+    assert field.value_to_bytes(packet, [0xAABB]) == b"\xaa\xbb"
+    assert field.value_to_bytes(packet, [0xAABB, 0xCCDD]) == b"\xaa\xbb\xcc\xdd"
+    assert (
+        field.value_to_bytes(packet, [0xAABB, 0xCCDD], default_endianness="<")
+        == b"\xbb\xaa\xdd\xcc"
+    )
 
 
 def test_fixed_list_field_plain_deserialise(packet):
@@ -451,39 +545,54 @@ def test_fixed_list_field_plain_deserialise(packet):
     assert field.buffer_to_value(packet, b"", 0) == ([], 0)
     assert field.buffer_to_value(packet, b"foo", 3) == ([], 0)
     assert field.buffer_to_value(packet, b"\xaa\xbb", 0) == ([0xAABB], 2)
-    assert field.buffer_to_value(packet, b"\xaa\xbb", 0, default_endianness='<') == ([0xBBAA], 2)
-    assert field.buffer_to_value(packet, b"\xaa\xbb\xcc\xdd", 0) == ([0xAABB, 0xCCDD], 4)
+    assert field.buffer_to_value(packet, b"\xaa\xbb", 0, default_endianness="<") == (
+        [0xBBAA],
+        2,
+    )
+    assert field.buffer_to_value(packet, b"\xaa\xbb\xcc\xdd", 0) == (
+        [0xAABB, 0xCCDD],
+        4,
+    )
 
     with pytest.raises(PacketDecodeError):
         field.buffer_to_value(packet, b"\xaa\xbb", 1)
 
 
 def test_fixed_list_field_length_serialise(packet):
-    field = FixedList(Uint16(), length=packet_field(packet, 'length'))
+    field = FixedList(Uint16(), length=packet_field(packet, "length"))
 
     field.prepare(packet, [])
     assert packet.length == 0
-    assert field.value_to_bytes(packet, []) == b''
+    assert field.value_to_bytes(packet, []) == b""
     field.prepare(packet, [0xAABB])
     assert packet.length == 2
-    assert field.value_to_bytes(packet, [0xAABB]) == b'\xaa\xbb'
+    assert field.value_to_bytes(packet, [0xAABB]) == b"\xaa\xbb"
     field.prepare(packet, [0xAABB, 0xCCDD])
     assert packet.length == 6  # Because it adds on from the previous serialisation
-    assert field.value_to_bytes(packet, [0xAABB, 0xCCDD]) == b'\xaa\xbb\xcc\xdd'
-    assert field.value_to_bytes(packet, [0xAABB, 0xCCDD], default_endianness='<') == b'\xbb\xaa\xdd\xcc'
+    assert field.value_to_bytes(packet, [0xAABB, 0xCCDD]) == b"\xaa\xbb\xcc\xdd"
+    assert (
+        field.value_to_bytes(packet, [0xAABB, 0xCCDD], default_endianness="<")
+        == b"\xbb\xaa\xdd\xcc"
+    )
 
 
 def test_fixed_list_field_length_deserialise(packet):
-    field = FixedList(Uint16(), length=packet_field(packet, 'length'))
+    field = FixedList(Uint16(), length=packet_field(packet, "length"))
 
     packet.length = 0
     assert field.buffer_to_value(packet, b"", 0) == ([], 0)
     assert field.buffer_to_value(packet, b"foo", 3) == ([], 0)
     assert field.buffer_to_value(packet, b"\xaa\xbb", 0) == ([], 0)
     packet.length = 2
-    assert field.buffer_to_value(packet, b"\xaa\xbb", 0, default_endianness='<') == ([0xBBAA], 2)
+    assert field.buffer_to_value(packet, b"\xaa\xbb", 0, default_endianness="<") == (
+        [0xBBAA],
+        2,
+    )
     packet.length = 4
-    assert field.buffer_to_value(packet, b"\xaa\xbb\xcc\xdd", 0) == ([0xAABB, 0xCCDD], 4)
+    assert field.buffer_to_value(packet, b"\xaa\xbb\xcc\xdd", 0) == (
+        [0xAABB, 0xCCDD],
+        4,
+    )
 
     with pytest.raises(PacketDecodeError):
         field.buffer_to_value(packet, b"\xaa\xbb", 1)
@@ -493,158 +602,192 @@ def test_fixed_list_packet_length_serialise(packet):
     class Foo(PebblePacket):
         foo = Uint16()
 
-    field = FixedList(Foo(), length=packet_field(packet, 'length'))
+    field = FixedList(Foo(), length=packet_field(packet, "length"))
 
     field.prepare(packet, [])
     assert packet.length == 0
-    assert field.value_to_bytes(packet, []) == b''
+    assert field.value_to_bytes(packet, []) == b""
     field.prepare(packet, [Foo(foo=0xAABB)])
     assert packet.length == 2
-    assert field.value_to_bytes(packet, [Foo(foo=0xAABB)]) == b'\xaa\xbb'
+    assert field.value_to_bytes(packet, [Foo(foo=0xAABB)]) == b"\xaa\xbb"
     field.prepare(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)])
     assert packet.length == 6  # Because it adds on from the previous serialisation
-    assert field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)]) == b'\xaa\xbb\xcc\xdd'
-    assert field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)], default_endianness='<') == b'\xbb\xaa\xdd\xcc'
+    assert (
+        field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)])
+        == b"\xaa\xbb\xcc\xdd"
+    )
+    assert (
+        field.value_to_bytes(
+            packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)], default_endianness="<"
+        )
+        == b"\xbb\xaa\xdd\xcc"
+    )
 
 
 def test_fixed_list_packet_length_deserialise(packet):
     class Foo(PebblePacket):
         foo = Uint16()
 
-    field = FixedList(Foo(), length=packet_field(packet, 'length'))
+    field = FixedList(Foo(), length=packet_field(packet, "length"))
 
     packet.length = 0
     assert field.buffer_to_value(packet, b"", 0) == ([], 0)
     assert field.buffer_to_value(packet, b"foo", 3) == ([], 0)
     assert field.buffer_to_value(packet, b"\xaa\xbb", 0) == ([], 0)
     packet.length = 2
-    assert field.buffer_to_value(packet, b"\xaa\xbb", 0, default_endianness='<') == ([Foo(foo=0xBBAA)], 2)
+    assert field.buffer_to_value(packet, b"\xaa\xbb", 0, default_endianness="<") == (
+        [Foo(foo=0xBBAA)],
+        2,
+    )
     packet.length = 4
-    assert field.buffer_to_value(packet, b"\xaa\xbb\xcc\xdd", 0) == ([Foo(foo=0xAABB), Foo(foo=0xCCDD)], 4)
+    assert field.buffer_to_value(packet, b"\xaa\xbb\xcc\xdd", 0) == (
+        [Foo(foo=0xAABB), Foo(foo=0xCCDD)],
+        4,
+    )
 
     with pytest.raises(PacketDecodeError):
         field.buffer_to_value(packet, b"\xaa\xbb", 1)
 
 
 def test_fixed_list_field_count_serialise(packet):
-    field = FixedList(Uint16(), count=packet_field(packet, 'count'))
+    field = FixedList(Uint16(), count=packet_field(packet, "count"))
 
     field.prepare(packet, [])
     assert packet.count == 0
-    assert field.value_to_bytes(packet, []) == b''
+    assert field.value_to_bytes(packet, []) == b""
     field.prepare(packet, [0xAABB])
     assert packet.count == 1
-    assert field.value_to_bytes(packet, [0xAABB]) == b'\xaa\xbb'
+    assert field.value_to_bytes(packet, [0xAABB]) == b"\xaa\xbb"
     field.prepare(packet, [0xAABB, 0xCCDD])
     assert packet.count == 2
-    assert field.value_to_bytes(packet, [0xAABB, 0xCCDD]) == b'\xaa\xbb\xcc\xdd'
-    assert field.value_to_bytes(packet, [0xAABB, 0xCCDD], default_endianness='<') == b'\xbb\xaa\xdd\xcc'
+    assert field.value_to_bytes(packet, [0xAABB, 0xCCDD]) == b"\xaa\xbb\xcc\xdd"
+    assert (
+        field.value_to_bytes(packet, [0xAABB, 0xCCDD], default_endianness="<")
+        == b"\xbb\xaa\xdd\xcc"
+    )
 
 
 def test_fixed_list_packet_count_serialise(packet):
     class Foo(PebblePacket):
         foo = Uint16()
 
-    field = FixedList(Foo(), count=packet_field(packet, 'count'))
+    field = FixedList(Foo(), count=packet_field(packet, "count"))
 
     field.prepare(packet, [])
     assert packet.count == 0
-    assert field.value_to_bytes(packet, []) == b''
+    assert field.value_to_bytes(packet, []) == b""
     field.prepare(packet, [Foo(foo=0xAABB)])
     assert packet.count == 1
-    assert field.value_to_bytes(packet, [Foo(foo=0xAABB)]) == b'\xaa\xbb'
+    assert field.value_to_bytes(packet, [Foo(foo=0xAABB)]) == b"\xaa\xbb"
     field.prepare(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)])
     assert packet.count == 2
-    assert field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)]) == b'\xaa\xbb\xcc\xdd'
-    assert field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)], default_endianness='<') == b'\xbb\xaa\xdd\xcc'
+    assert (
+        field.value_to_bytes(packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)])
+        == b"\xaa\xbb\xcc\xdd"
+    )
+    assert (
+        field.value_to_bytes(
+            packet, [Foo(foo=0xAABB), Foo(foo=0xCCDD)], default_endianness="<"
+        )
+        == b"\xbb\xaa\xdd\xcc"
+    )
 
 
 def test_binary_array_serialise(packet):
     field = BinaryArray()
-    assert field.value_to_bytes(packet, b'foobarbaz') == b'foobarbaz'
-    assert field.value_to_bytes(packet, b'foo\x00barbaz') == b'foo\x00barbaz'
-    assert field.value_to_bytes(packet, b'') == b''
+    assert field.value_to_bytes(packet, b"foobarbaz") == b"foobarbaz"
+    assert field.value_to_bytes(packet, b"foo\x00barbaz") == b"foo\x00barbaz"
+    assert field.value_to_bytes(packet, b"") == b""
 
 
 def test_binary_array_deserialise(packet):
     field = BinaryArray()
-    assert field.buffer_to_value(packet, b'', 0) == (b'', 0)
-    assert field.buffer_to_value(packet, b'foobar\x00baz\x00', 0) == (b'foobar\x00baz\x00', 11)
-    assert field.buffer_to_value(packet, b'foobar\x00baz\x00', 3) == (b'bar\x00baz\x00', 8)
+    assert field.buffer_to_value(packet, b"", 0) == (b"", 0)
+    assert field.buffer_to_value(packet, b"foobar\x00baz\x00", 0) == (
+        b"foobar\x00baz\x00",
+        11,
+    )
+    assert field.buffer_to_value(packet, b"foobar\x00baz\x00", 3) == (
+        b"bar\x00baz\x00",
+        8,
+    )
 
 
 def test_binary_array_variable_length_serialise(packet):
-    field = BinaryArray(length=packet_field(packet, 'length'))
+    field = BinaryArray(length=packet_field(packet, "length"))
 
-    field.prepare(packet, b'foobarbaz')
+    field.prepare(packet, b"foobarbaz")
     assert packet.length == 9
-    assert field.value_to_bytes(packet, b'foobarbaz') == b'foobarbaz'
+    assert field.value_to_bytes(packet, b"foobarbaz") == b"foobarbaz"
 
-    field.prepare(packet, b'foo\x00barbaz')
+    field.prepare(packet, b"foo\x00barbaz")
     assert packet.length == 10
-    assert field.value_to_bytes(packet, b'foo\x00barbaz') == b'foo\x00barbaz'
+    assert field.value_to_bytes(packet, b"foo\x00barbaz") == b"foo\x00barbaz"
 
-    field.prepare(packet, b'')
+    field.prepare(packet, b"")
     assert packet.length == 0
-    assert field.value_to_bytes(packet, b'') == b''
+    assert field.value_to_bytes(packet, b"") == b""
 
 
 def test_binary_array_variable_length_deserialise(packet):
-    field = BinaryArray(length=packet_field(packet, 'length'))
+    field = BinaryArray(length=packet_field(packet, "length"))
 
     field.length = 2
-    assert field.buffer_to_value(packet, b'foobar', 0) == (b'fo', 2)
+    assert field.buffer_to_value(packet, b"foobar", 0) == (b"fo", 2)
     field.length = 7
-    assert field.buffer_to_value(packet, b'foobar\x00baz\x00', 0) == (b'foobar\x00', 7)
+    assert field.buffer_to_value(packet, b"foobar\x00baz\x00", 0) == (b"foobar\x00", 7)
     field.length = 8
-    assert field.buffer_to_value(packet, b'foobar\x00baz\x00', 3) == (b'bar\x00baz\x00', 8)
+    assert field.buffer_to_value(packet, b"foobar\x00baz\x00", 3) == (
+        b"bar\x00baz\x00",
+        8,
+    )
 
     with pytest.raises(PacketDecodeError):
         field.length = 2
-        field.buffer_to_value(packet, b'hi', 1)
+        field.buffer_to_value(packet, b"hi", 1)
 
 
 def test_binary_array_fixed_length_serialise(packet):
     field = BinaryArray(length=6)
-    assert field.value_to_bytes(packet, b'foobar') == b'foobar'
-    assert field.value_to_bytes(packet, b'foobarbaz') == b'foobar'
-    assert field.value_to_bytes(packet, b'foo\x00barbaz') == b'foo\x00ba'
-    assert field.value_to_bytes(packet, b'foo') == b'foo\x00\x00\x00'
+    assert field.value_to_bytes(packet, b"foobar") == b"foobar"
+    assert field.value_to_bytes(packet, b"foobarbaz") == b"foobar"
+    assert field.value_to_bytes(packet, b"foo\x00barbaz") == b"foo\x00ba"
+    assert field.value_to_bytes(packet, b"foo") == b"foo\x00\x00\x00"
 
 
 def test_binary_array_fixed_length_deserialise(packet):
     field = BinaryArray(length=6)
-    assert field.buffer_to_value(packet, b'foobar', 0) == (b'foobar', 6)
-    assert field.buffer_to_value(packet, b'foobar\x00baz\x00', 0) == (b'foobar', 6)
-    assert field.buffer_to_value(packet, b'foobar\x00baz\x00', 3) == (b'bar\x00ba', 6)
+    assert field.buffer_to_value(packet, b"foobar", 0) == (b"foobar", 6)
+    assert field.buffer_to_value(packet, b"foobar\x00baz\x00", 0) == (b"foobar", 6)
+    assert field.buffer_to_value(packet, b"foobar\x00baz\x00", 3) == (b"bar\x00ba", 6)
 
     with pytest.raises(PacketDecodeError):
-        field.buffer_to_value(packet, b'fooba', 0)
+        field.buffer_to_value(packet, b"fooba", 0)
 
 
 def test_binary_array_unicode_serialise(packet):
     field = BinaryArray(length=6)
     # Passing text (str) instead of bytes should raise TypeError
     with pytest.raises(TypeError):
-        field.value_to_bytes(packet, 'hello')
+        field.value_to_bytes(packet, "hello")
 
 
 def test_optional_serialise(packet):
-    field = Optional(BinaryArray(length=packet_field(packet, 'length')))
+    field = Optional(BinaryArray(length=packet_field(packet, "length")))
 
-    field.prepare(packet, b'A')
+    field.prepare(packet, b"A")
     assert packet.length == 1
-    assert field.value_to_bytes(packet, b'A') == b'A'
+    assert field.value_to_bytes(packet, b"A") == b"A"
 
 
 def test_optional_deserialise(packet):
-    field = Optional(BinaryArray(length=packet_field(packet, 'length')))
+    field = Optional(BinaryArray(length=packet_field(packet, "length")))
 
     packet.length = 1
-    assert field.buffer_to_value(packet, b'ABC', 0) == (b'A', 1)
-    assert field.buffer_to_value(packet, b'ABC', 1) == (b'B', 1)
-    assert field.buffer_to_value(packet, b'ABC', 2) == (b'C', 1)
-    assert field.buffer_to_value(packet, b'ABC', 3) == (None, 0)
+    assert field.buffer_to_value(packet, b"ABC", 0) == (b"A", 1)
+    assert field.buffer_to_value(packet, b"ABC", 1) == (b"B", 1)
+    assert field.buffer_to_value(packet, b"ABC", 2) == (b"C", 1)
+    assert field.buffer_to_value(packet, b"ABC", 3) == (None, 0)
 
 
 def test_embed_serialise(packet):
@@ -652,8 +795,11 @@ def test_embed_serialise(packet):
         foo = Uint16()
 
     field = Embed(Foo)
-    assert field.value_to_bytes(packet, Foo(foo=0xAABB)) == b'\xAA\xBB'
-    assert field.value_to_bytes(packet, Foo(foo=0xAABB), default_endianness='<') == b'\xBB\xAA'
+    assert field.value_to_bytes(packet, Foo(foo=0xAABB)) == b"\xaa\xbb"
+    assert (
+        field.value_to_bytes(packet, Foo(foo=0xAABB), default_endianness="<")
+        == b"\xbb\xaa"
+    )
 
 
 def test_embed_deserialise(packet):
@@ -661,8 +807,10 @@ def test_embed_deserialise(packet):
         foo = Uint16()
 
     field = Embed(Foo)
-    assert field.buffer_to_value(packet, b'foo\xAA\xBBfoo', 3) == (Foo(foo=0xAABB), 2)
-    assert field.buffer_to_value(packet, b'foo\xAA\xBBfoo', 3, default_endianness='<') == (Foo(foo=0xBBAA), 2)
+    assert field.buffer_to_value(packet, b"foo\xaa\xbbfoo", 3) == (Foo(foo=0xAABB), 2)
+    assert field.buffer_to_value(
+        packet, b"foo\xaa\xbbfoo", 3, default_endianness="<"
+    ) == (Foo(foo=0xBBAA), 2)
 
 
 def test_union_serialise(packet):
@@ -672,15 +820,15 @@ def test_union_serialise(packet):
     class Bar(PebblePacket):
         bar = FixedString(1)
 
-    field = Union(packet_field(packet, 'command'), {
-        1: Foo,
-        2: Bar
-    })
+    field = Union(packet_field(packet, "command"), {1: Foo, 2: Bar})
 
     field.prepare(packet, Foo(foo=0x4243))
     assert packet.command == 1
-    assert field.value_to_bytes(packet, Foo(foo=0x4243)) == b'\x42\x43'
-    assert field.value_to_bytes(packet, Foo(foo=0x4243), default_endianness='<') == b'\x43\x42'
+    assert field.value_to_bytes(packet, Foo(foo=0x4243)) == b"\x42\x43"
+    assert (
+        field.value_to_bytes(packet, Foo(foo=0x4243), default_endianness="<")
+        == b"\x43\x42"
+    )
 
     field.prepare(packet, Bar())
 
@@ -692,22 +840,22 @@ def test_union_deserialise(packet):
     class Bar(PebblePacket):
         bar = FixedString(1)
 
-    field = Union(packet_field(packet, 'command'), {
-        1: Foo,
-        2: Bar
-    })
+    field = Union(packet_field(packet, "command"), {1: Foo, 2: Bar})
 
     packet.command = 1
-    assert field.buffer_to_value(packet, b'\xAA\xBB', 0) == (Foo(foo=0xAABB), 2)
-    assert field.buffer_to_value(packet, b'foo\xAA\xBB', 3, default_endianness='<') == (Foo(foo=0xBBAA), 2)
+    assert field.buffer_to_value(packet, b"\xaa\xbb", 0) == (Foo(foo=0xAABB), 2)
+    assert field.buffer_to_value(packet, b"foo\xaa\xbb", 3, default_endianness="<") == (
+        Foo(foo=0xBBAA),
+        2,
+    )
     packet.command = 2
-    assert field.buffer_to_value(packet, b'!', 0) == (Bar(bar='!'), 1)
+    assert field.buffer_to_value(packet, b"!", 0) == (Bar(bar="!"), 1)
 
     packet.command = 3
     with pytest.raises(PacketDecodeError):
-        field.buffer_to_value(packet, b'!', 0)
+        field.buffer_to_value(packet, b"!", 0)
     field.accept_missing = True
-    assert field.buffer_to_value(packet, b'magic!', 2) == (None, 4)
+    assert field.buffer_to_value(packet, b"magic!", 2) == (None, 4)
 
 
 def test_embedded_fixedlist():
@@ -748,7 +896,7 @@ def test_decode_embed_with_length_field():
         foo = Embed(Foo, length=length)
         bar = Uint8()
 
-    result, length = EmbeddedListOfFoo.parse(b'\x01\x05\x10')
+    result, length = EmbeddedListOfFoo.parse(b"\x01\x05\x10")
     assert result == EmbeddedListOfFoo(length=1, foo=Foo(foo=5), bar=0x10)
     assert length == 3
 
@@ -761,7 +909,7 @@ def test_decode_embed_with_length_constant():
         foo = Embed(Foo, length=1)
         bar = Uint8()
 
-    result, length = EmbeddedListOfFoo.parse(b'\x05\x10')
+    result, length = EmbeddedListOfFoo.parse(b"\x05\x10")
     assert result == EmbeddedListOfFoo(foo=Foo(foo=5), bar=0x10)
     assert length == 2
 
@@ -770,13 +918,13 @@ def test_fixed_length_array():
     class Foo(PebblePacket):
         array = BinaryArray(length=2)
 
-    result = Foo(array=b'hi').serialise()
-    assert result == b'hi'
+    result = Foo(array=b"hi").serialise()
+    assert result == b"hi"
 
 
 def test_unbounded_length_array():
     class Foo(PebblePacket):
         array = BinaryArray()
 
-    result = Foo(array=b'hello world').serialise()
-    assert result == b'hello world'
+    result = Foo(array=b"hello world").serialise()
+    assert result == b"hello world"

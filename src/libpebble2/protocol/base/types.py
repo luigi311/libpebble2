@@ -5,11 +5,32 @@ import uuid
 
 from libpebble2.exceptions import PacketDecodeError, PacketEncodeError
 
-__all__ = ["DEFAULT_ENDIANNESS", "Field", "Int8", "Uint8", "Int16", "Uint16", "Int32", "Uint32",
-           "Int64", "Uint64", "Boolean", "UUID", "Union", "Embed", "Padding", "PascalString", "NullTerminatedString",
-           "FixedString", "PascalList", "FixedList", "BinaryArray", "Optional"]
+__all__ = [
+    "DEFAULT_ENDIANNESS",
+    "Field",
+    "Int8",
+    "Uint8",
+    "Int16",
+    "Uint16",
+    "Int32",
+    "Uint32",
+    "Int64",
+    "Uint64",
+    "Boolean",
+    "UUID",
+    "Union",
+    "Embed",
+    "Padding",
+    "PascalString",
+    "NullTerminatedString",
+    "FixedString",
+    "PascalList",
+    "FixedList",
+    "BinaryArray",
+    "Optional",
+]
 
-DEFAULT_ENDIANNESS = '!'
+DEFAULT_ENDIANNESS = "!"
 
 
 class Field(object):
@@ -23,6 +44,7 @@ class Field(object):
     :param enum: An :class:`~enum.Enum` that represents the possible values of the field.
     :type enum: ~enum.Enum
     """
+
     #: A format code for use in :meth:`struct.pack`, if using the default implementation of :meth:`buffer_to_value`
     #: and :meth:`value_to_bytes`
     struct_format = None
@@ -37,7 +59,9 @@ class Field(object):
         self.endianness = endianness
         Field.next_id += 1
 
-    def buffer_to_value(self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS):
+    def buffer_to_value(
+        self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS
+    ):
         """
         Converts the bytes in ``buffer`` at ``offset`` to a native Python value. Returns that value and the number of
         bytes consumed to create it.
@@ -55,8 +79,14 @@ class Field(object):
         :rtype: (:class:`object`, :any:`int`)
         """
         try:
-            value, length = struct.unpack_from(str(self.endianness or default_endianness)
-                                      + self.struct_format, buffer, offset)[0], struct.calcsize(self.struct_format)
+            value, length = (
+                struct.unpack_from(
+                    str(self.endianness or default_endianness) + self.struct_format,
+                    buffer,
+                    offset,
+                )[0],
+                struct.calcsize(self.struct_format),
+            )
             if self._enum is not None:
                 try:
                     return self._enum(value), length
@@ -80,13 +110,16 @@ class Field(object):
         :return: The serialised value
         :rtype: bytes
         """
-        return struct.pack(str(self.endianness or default_endianness) + self.struct_format, value)
+        return struct.pack(
+            str(self.endianness or default_endianness) + self.struct_format, value
+        )
 
     def prepare(self, obj, value):
         pass
 
     def dependent_fields(self):
         return []
+
 
 #: Used internally by :class:`PebblePacket` to sort fields into the right order.
 Field.next_id = 0
@@ -96,63 +129,72 @@ class Int8(Field):
     """
     Represents an ``int8_t``.
     """
-    struct_format = 'b'
+
+    struct_format = "b"
 
 
 class Uint8(Field):
     """
     Represents a ``uint8_t``.
     """
-    struct_format = 'B'
+
+    struct_format = "B"
 
 
 class Int16(Field):
     """
     Represents an ``int16_t``.
     """
-    struct_format = 'h'
+
+    struct_format = "h"
 
 
 class Uint16(Field):
     """
     Represents a ``uint16_t``.
     """
-    struct_format = 'H'
+
+    struct_format = "H"
 
 
 class Int32(Field):
     """
     Represents an ``int32_t``.
     """
-    struct_format = 'i'
+
+    struct_format = "i"
 
 
 class Uint32(Field):
     """
     Represents a ``uint32_t``.
     """
-    struct_format = 'I'
+
+    struct_format = "I"
 
 
 class Int64(Field):
     """
     Represents an ``int64_t``.
     """
-    struct_format = 'q'
+
+    struct_format = "q"
 
 
 class Uint64(Field):
     """
     Represents a ``uint64_t``.
     """
-    struct_format = 'Q'
+
+    struct_format = "Q"
 
 
 class Boolean(Field):
     """
     Represents a ``bool``.
     """
-    struct_format = '?'
+
+    struct_format = "?"
 
 
 class UUID(Field):
@@ -160,11 +202,16 @@ class UUID(Field):
     Represents a UUID, represented as a 16-byte array (``uint8_t[16]``). The Python representation is a
     :class:`~uuid.UUID`. Endianness is ignored.
     """
-    def buffer_to_value(self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS):
+
+    def buffer_to_value(
+        self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS
+    ):
         try:
-            return uuid.UUID(bytes=buffer[offset:offset+16]), 16
+            return uuid.UUID(bytes=buffer[offset : offset + 16]), 16
         except ValueError as e:
-            raise PacketDecodeError("{}: failed to decode UUID: {}".format(self.type, e))
+            raise PacketDecodeError(
+                "{}: failed to decode UUID: {}".format(self.type, e)
+            )
 
     def value_to_bytes(self, obj, value, default_endianness=DEFAULT_ENDIANNESS):
         assert isinstance(value, uuid.UUID)
@@ -198,6 +245,7 @@ class Union(Field):
                    field will be filled in on serialisation, and taken as a *maximum* length during deserialisation.
     :type length: int
     """
+
     def __init__(self, determinant, contents, accept_missing=False, length=None):
         self.determinant = determinant
         self.contents = contents
@@ -210,7 +258,7 @@ class Union(Field):
         if value is not None:
             return value.serialise(default_endianness=default_endianness)
         elif self.accept_missing:
-            return b''
+            return b""
         else:
             raise Exception("???")
 
@@ -223,17 +271,23 @@ class Union(Field):
         if isinstance(self.length, Field):
             setattr(obj, self.length._name, len(value.serialise()))
 
-    def buffer_to_value(self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS):
+    def buffer_to_value(
+        self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS
+    ):
         if isinstance(self.length, Field):
             length = getattr(obj, self.length._name)
         else:
             length = len(buffer) - offset
         k = getattr(obj, self.determinant._name)
         try:
-            return self.contents[k].parse(buffer[offset:offset+length], default_endianness=default_endianness)
+            return self.contents[k].parse(
+                buffer[offset : offset + length], default_endianness=default_endianness
+            )
         except KeyError:
             if not self.accept_missing:
-                raise PacketDecodeError("{}: unrecognised value for union: {}".format(self.type, k))
+                raise PacketDecodeError(
+                    "{}: unrecognised value for union: {}".format(self.type, k)
+                )
             else:
                 return None, length
 
@@ -251,6 +305,7 @@ class Embed(Field):
     :param packet: The packet to embed.
     :type packet: .PebblePacket
     """
+
     def __init__(self, packet, length=None):
         self.packet = packet
         self.length = length
@@ -267,19 +322,29 @@ class Embed(Field):
         else:
             max_len = self.length
         if max_len is not None and len(v) > max_len:
-            raise PacketEncodeError("Embedded field with max length {} is actually {} bytes long."
-                                    .format(self.length, len(v)))
+            raise PacketEncodeError(
+                "Embedded field with max length {} is actually {} bytes long.".format(
+                    self.length, len(v)
+                )
+            )
         return v
 
-    def buffer_to_value(self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS):
+    def buffer_to_value(
+        self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS
+    ):
         if self.length is None:
-            return self.packet.parse(buffer[offset:], default_endianness=default_endianness)
+            return self.packet.parse(
+                buffer[offset:], default_endianness=default_endianness
+            )
         else:
             if isinstance(self.length, Field):
                 max_length = getattr(obj, self.length._name)
             else:
                 max_length = self.length
-            return self.packet.parse(buffer[offset:offset+max_length], default_endianness=default_endianness)
+            return self.packet.parse(
+                buffer[offset : offset + max_length],
+                default_endianness=default_endianness,
+            )
 
     def dependent_fields(self):
         if isinstance(self.length, Field):
@@ -296,15 +361,18 @@ class Padding(Field):
     :param length: The number of bytes of padding.
     :type length: int
     """
+
     def __init__(self, length):
         self.length = length
         super(Padding, self).__init__()
 
-    def buffer_to_value(self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS):
+    def buffer_to_value(
+        self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS
+    ):
         return None, self.length
 
     def value_to_bytes(self, obj, value, default_endianness=DEFAULT_ENDIANNESS):
-        return b'\x00' * self.length
+        return b"\x00" * self.length
 
 
 class PascalString(Field):
@@ -319,54 +387,69 @@ class PascalString(Field):
                             This actually comes up.
     :type count_null_terminator: bool
     """
-    def __init__(self, null_terminated=False, count_null_terminator=True, *args, **kwargs):
+
+    def __init__(
+        self, null_terminated=False, count_null_terminator=True, *args, **kwargs
+    ):
         self.null_terminated = null_terminated
         self.count_null_terminator = count_null_terminator
         super(PascalString, self).__init__(*args, **kwargs)
 
-    def buffer_to_value(self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS):
+    def buffer_to_value(
+        self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS
+    ):
         try:
-            length, = struct.unpack_from('B', buffer, offset)
+            (length,) = struct.unpack_from("B", buffer, offset)
         except struct.error as e:
             raise PacketDecodeError("{}: {}".format(self.type, str(e)))
         extra_bytes = 1
         if self.null_terminated and not self.count_null_terminator:
             extra_bytes += 1
         if len(buffer) < offset + length + extra_bytes:
-            raise PacketDecodeError("{}: Expected {} bytes, but only had {}".format(
-                self.type, length + extra_bytes, len(buffer) - offset))
-        return buffer[offset+1:offset+1+length].split(b'\x00')[0].decode('utf-8'), length + extra_bytes
+            raise PacketDecodeError(
+                "{}: Expected {} bytes, but only had {}".format(
+                    self.type, length + extra_bytes, len(buffer) - offset
+                )
+            )
+        return buffer[offset + 1 : offset + 1 + length].split(b"\x00")[0].decode(
+            "utf-8"
+        ), length + extra_bytes
 
     def value_to_bytes(self, obj, value, default_endianness=DEFAULT_ENDIANNESS):
-        value = value[:255].encode('utf-8')
+        value = value[:255].encode("utf-8")
         if self.null_terminated:
             if self.count_null_terminator:
-                value = value[:254] + b'\x00'
+                value = value[:254] + b"\x00"
                 length = len(value)
             else:
-                value = value[:255] + b'\x00'
+                value = value[:255] + b"\x00"
                 length = len(value) - 1
         else:
             length = len(value)
-        return struct.pack('B', length) + value
+        return struct.pack("B", length) + value
 
 
 class NullTerminatedString(Field):
     """
     Represents a null-terminated, UTF-8 encoded string (i.e. a C string).
     """
-    def buffer_to_value(self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS):
+
+    def buffer_to_value(
+        self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS
+    ):
         end = offset
         if end >= len(buffer):
             raise PacketDecodeError("{}: No bytes available.")
         while buffer[end] != 0:
             end += 1
             if end >= len(buffer):
-                raise PacketDecodeError("{}: Reached end of buffer without terminating.".format(self.type))
-        return buffer[offset:end].split(b'\x00')[0].decode('utf-8'), end - offset + 1
+                raise PacketDecodeError(
+                    "{}: Reached end of buffer without terminating.".format(self.type)
+                )
+        return buffer[offset:end].split(b"\x00")[0].decode("utf-8"), end - offset + 1
 
     def value_to_bytes(self, obj, value, default_endianness=DEFAULT_ENDIANNESS):
-        return value.encode('utf-8') + b'\x00'
+        return value.encode("utf-8") + b"\x00"
 
 
 class FixedString(Field):
@@ -381,15 +464,18 @@ class FixedString(Field):
     :param length: The length of the string.
     :type length: :class:`Field` | :any:`int`
     """
+
     def __init__(self, length=None, **kwargs):
         self.length = length
         super(FixedString, self).__init__(**kwargs)
 
     def prepare(self, obj, value):
         if isinstance(self.length, Field):
-            setattr(obj, self.length._name, len(value.encode('utf-8')))
+            setattr(obj, self.length._name, len(value.encode("utf-8")))
 
-    def buffer_to_value(self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS):
+    def buffer_to_value(
+        self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS
+    ):
         if isinstance(self.length, Field):
             length = getattr(obj, self.length._name)
         elif self.length is not None:
@@ -397,19 +483,23 @@ class FixedString(Field):
         else:
             length = len(buffer) - offset
         try:
-            return struct.unpack_from('%ds' % length, buffer, offset)[0].split(b'\x00')[0].decode('utf-8'), length
+            return struct.unpack_from("%ds" % length, buffer, offset)[0].split(b"\x00")[
+                0
+            ].decode("utf-8"), length
         except struct.error:
-            raise PacketDecodeError("{}: string not long enough (wanted {} bytes)".format(self.type, length))
+            raise PacketDecodeError(
+                "{}: string not long enough (wanted {} bytes)".format(self.type, length)
+            )
 
     def value_to_bytes(self, obj, value, default_endianness=DEFAULT_ENDIANNESS):
-        value = value.encode('utf-8')
+        value = value.encode("utf-8")
         if isinstance(self.length, Field):
             length = getattr(obj, self.length._name)
         elif self.length is not None:
             length = self.length
         else:
             length = len(value)
-        return struct.pack('%ds' % length, value)
+        return struct.pack("%ds" % length, value)
 
     def dependent_fields(self):
         if isinstance(self.length, Field):
@@ -429,6 +519,7 @@ class PascalList(Field):
                   maximum; it is not an error for the packet to end prematurely.
     :type count: Field
     """
+
     def __init__(self, member_type, count=None):
         self.member_type = member_type
         self.count = count
@@ -439,13 +530,15 @@ class PascalList(Field):
             setattr(obj, self.count._name, len(value))
 
     def value_to_bytes(self, obj, values, default_endianness=DEFAULT_ENDIANNESS):
-        result = b''
+        result = b""
         for value in values:
             serialised = value.serialise(default_endianness=default_endianness)
-            result += struct.pack('B', len(serialised)) + serialised
+            result += struct.pack("B", len(serialised)) + serialised
         return result
 
-    def buffer_to_value(self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS):
+    def buffer_to_value(
+        self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS
+    ):
         results = []
         length = 0
         max_count = None
@@ -456,12 +549,18 @@ class PascalList(Field):
         i = 0
         while offset + length < len(buffer) and (max_count is None or i < max_count):
             try:
-                item_length, = struct.unpack_from('B', buffer, offset + length)
+                (item_length,) = struct.unpack_from("B", buffer, offset + length)
             except struct.error as e:
-                raise PacketDecodeError("{}: couldn't parse entry length: {}".format(self.type, e))
+                raise PacketDecodeError(
+                    "{}: couldn't parse entry length: {}".format(self.type, e)
+                )
             length += 1
-            results.append(self.member_type.parse(buffer[offset+length:offset+length+item_length],
-                                                  default_endianness=default_endianness)[0])
+            results.append(
+                self.member_type.parse(
+                    buffer[offset + length : offset + length + item_length],
+                    default_endianness=default_endianness,
+                )[0]
+            )
             length += item_length
             i += 1
         return results, length
@@ -487,6 +586,7 @@ class FixedList(Field):
     :param length: A :class:`Field` containing the number of bytes in the list. On serialisation, will be set to the
                    length of the serialised list. On deserialisation, is treated as a maximum.
     """
+
     def __init__(self, member_type, count=None, length=None):
         self.member_type = member_type
         self.count = count
@@ -500,21 +600,27 @@ class FixedList(Field):
         if isinstance(self.length, Field):
             current = getattr(obj, self.length._name) or 0
             if isinstance(self.member_type, Field):
-                total_length = sum(len(self.member_type.value_to_bytes(obj, x)) for x in value)
+                total_length = sum(
+                    len(self.member_type.value_to_bytes(obj, x)) for x in value
+                )
             else:
                 total_length = sum(len(x.serialise()) for x in value)
             setattr(obj, self.length._name, current + total_length)
 
     def value_to_bytes(self, obj, values, default_endianness=DEFAULT_ENDIANNESS):
-        result = b''
+        result = b""
         for value in values:
             if isinstance(self.member_type, Field):
-                result += self.member_type.value_to_bytes(obj, value, default_endianness=default_endianness)
+                result += self.member_type.value_to_bytes(
+                    obj, value, default_endianness=default_endianness
+                )
             else:
                 result += value.serialise(default_endianness=default_endianness)
         return result
 
-    def buffer_to_value(self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS):
+    def buffer_to_value(
+        self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS
+    ):
         results = []
         length = 0
         max_count = None
@@ -527,14 +633,19 @@ class FixedList(Field):
             max_length = getattr(obj, self.length._name)
 
         i = 0
-        while (offset + length < len(buffer) and (max_count is None or i < max_count)
-               and (max_length is None or length < max_length)):
+        while (
+            offset + length < len(buffer)
+            and (max_count is None or i < max_count)
+            and (max_length is None or length < max_length)
+        ):
             if isinstance(self.member_type, Field):
-                value, item_length = self.member_type.buffer_to_value(obj, buffer, offset+length,
-                                                                      default_endianness=default_endianness)
+                value, item_length = self.member_type.buffer_to_value(
+                    obj, buffer, offset + length, default_endianness=default_endianness
+                )
             else:
-                value, item_length = self.member_type.parse(buffer[offset+length:],
-                                                            default_endianness=default_endianness)
+                value, item_length = self.member_type.parse(
+                    buffer[offset + length :], default_endianness=default_endianness
+                )
             results.append(value)
             length += item_length
             i += 1
@@ -562,6 +673,7 @@ class BinaryArray(Field):
                    * If it is ``None``, bytes are read until the end of the message.
     :type length: Field | int
     """
+
     def __init__(self, length=None, **kwargs):
         self.length = length
         super(BinaryArray, self).__init__(**kwargs)
@@ -581,10 +693,12 @@ class BinaryArray(Field):
         else:
             return value
         value = value[:length]
-        value += b'\x00' * (length - len(value))
+        value += b"\x00" * (length - len(value))
         return value
 
-    def buffer_to_value(self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS):
+    def buffer_to_value(
+        self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS
+    ):
         if isinstance(self.length, Field):
             length = getattr(obj, self.length._name)
         elif self.length is None:
@@ -592,9 +706,12 @@ class BinaryArray(Field):
         else:
             length = self.length
         if len(buffer) - offset < length:
-            raise PacketDecodeError("{}: Expected more bytes (wanted {}; got {}).".format(self.type, length,
-                                                                                          len(buffer) - offset))
-        return buffer[offset:offset+length], length
+            raise PacketDecodeError(
+                "{}: Expected more bytes (wanted {}; got {}).".format(
+                    self.type, length, len(buffer) - offset
+                )
+            )
+        return buffer[offset : offset + length], length
 
     def dependent_fields(self):
         if isinstance(self.length, Field):
@@ -611,6 +728,7 @@ class Optional(Field):
     :param actual_field: The field that is being made optional.
     :type actual_field: Field
     """
+
     def __init__(self, actual_field, **kwargs):
         self.field = actual_field
         super(Optional, self).__init__(**kwargs)
@@ -620,15 +738,21 @@ class Optional(Field):
 
     def value_to_bytes(self, obj, value, default_endianness=DEFAULT_ENDIANNESS):
         if value is None:
-            return b''
+            return b""
 
-        return self.field.value_to_bytes(obj, value, default_endianness=default_endianness)
+        return self.field.value_to_bytes(
+            obj, value, default_endianness=default_endianness
+        )
 
-    def buffer_to_value(self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS):
+    def buffer_to_value(
+        self, obj, buffer, offset, default_endianness=DEFAULT_ENDIANNESS
+    ):
         if len(buffer) <= offset:
             return None, 0
         else:
-            return self.field.buffer_to_value(obj, buffer, offset, default_endianness=default_endianness)
+            return self.field.buffer_to_value(
+                obj, buffer, offset, default_endianness=default_endianness
+            )
 
     def dependent_fields(self):
         return self.field.dependent_fields()

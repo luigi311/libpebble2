@@ -1,9 +1,16 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from enum import IntEnum
 
 from libpebble2.protocol.base import PebblePacket
-from libpebble2.protocol.base.types import BinaryArray, FixedString, PascalString, Uint8, Uint32, Union
+from libpebble2.protocol.base.types import (
+    BinaryArray,
+    FixedString,
+    PascalString,
+    Uint8,
+    Uint32,
+    Union,
+)
 
 
 class WebSocketRelayFromWatch(PebblePacket):
@@ -30,6 +37,7 @@ class WebSocketInstallStatus(PebblePacket):
     class StatusCode(IntEnum):
         Success = 0x00
         Failed = 0x01
+
     status = Uint32()
 
 
@@ -43,15 +51,17 @@ class WebSocketInstallPhoneInfoResponse(PebblePacket):
 
 class WebSocketConnectionStatusUpdate(PebblePacket):
     class StatusCode(IntEnum):
-        Connected = 0xff
+        Connected = 0xFF
         Disconnected = 0x00
+
     status = Uint8()
 
 
 class WebSocketProxyConnectionStatusUpdate(PebblePacket):
     class StatusCode(IntEnum):
-        Connected = 0xff
+        Connected = 0xFF
         Disconnected = 0x00
+
     status = Uint8()
 
 
@@ -63,6 +73,7 @@ class WebSocketProxyAuthenticationResponse(PebblePacket):
     class StatusCode(IntEnum):
         Success = 0x00
         Failed = 0x01
+
     status = Uint8()
 
 
@@ -86,19 +97,20 @@ class AppConfigURL(PebblePacket):
 
 class WebSocketPhonesimAppConfig(PebblePacket):
     command = Uint8()
-    config = Union(command, {
-        0x01: AppConfigSetup,
-        0x02: AppConfigResponse,
-        0x03: AppConfigCancelled,
-    })
+    config = Union(
+        command,
+        {
+            0x01: AppConfigSetup,
+            0x02: AppConfigResponse,
+            0x03: AppConfigCancelled,
+        },
+    )
 
 
 class WebSocketPhonesimConfigResponse(PebblePacket):
     command = Uint8()
 
-    config = Union(command, {
-        0x01: AppConfigURL
-    })
+    config = Union(command, {0x01: AppConfigURL})
 
 
 class WebSocketRelayQemu(PebblePacket):
@@ -116,10 +128,7 @@ class DeletePin(PebblePacket):
 
 class WebSocketTimelinePin(PebblePacket):
     command = Uint8()
-    data = Union(command, {
-        0x01: InsertPin,
-        0x02: DeletePin
-    })
+    data = Union(command, {0x01: InsertPin, 0x02: DeletePin})
 
 
 class WebSocketTimelineResponse(PebblePacket):
@@ -129,14 +138,15 @@ class WebSocketTimelineResponse(PebblePacket):
 
     status = Uint8(enum=Status)
 
+
 to_watch = {
     0x01: WebSocketRelayToWatch,
     0x04: WebSocketInstallBundle,
     0x06: WebSocketPhoneInfoRequest,
     0x09: WebSocketProxyAuthenticationRequest,
-    0x0a: WebSocketPhonesimAppConfig,
-    0x0b: WebSocketRelayQemu,
-    0x0c: WebSocketTimelinePin
+    0x0A: WebSocketPhonesimAppConfig,
+    0x0B: WebSocketRelayQemu,
+    0x0C: WebSocketTimelinePin,
 }
 
 from_watch = {
@@ -149,8 +159,8 @@ from_watch = {
     0x07: WebSocketConnectionStatusUpdate,
     0x08: WebSocketProxyConnectionStatusUpdate,
     0x09: WebSocketProxyAuthenticationResponse,
-    0x0a: WebSocketPhonesimConfigResponse,
-    0x0c: WebSocketTimelineResponse,
+    0x0A: WebSocketPhonesimConfigResponse,
+    0x0C: WebSocketTimelineResponse,
 }
 
 endpoints = {v: k for k, v in to_watch.items()}

@@ -1,12 +1,19 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from enum import IntEnum
 
 from .base import PebblePacket
 from .base.types import BinaryArray, Uint16, Uint8, Union
 
-__all__ = ["InsertCommand", "DeleteCommand", "ClearCommand", "BlobDatabaseID", "BlobCommand", "BlobStatus",
-           "BlobResponse"]
+__all__ = [
+    "InsertCommand",
+    "DeleteCommand",
+    "ClearCommand",
+    "BlobDatabaseID",
+    "BlobCommand",
+    "BlobStatus",
+    "BlobResponse",
+]
 
 
 class InsertCommand(PebblePacket):
@@ -36,18 +43,21 @@ class BlobDatabaseID(IntEnum):
 
 class BlobCommand(PebblePacket):
     class Meta:
-        endpoint = 0xb1db
+        endpoint = 0xB1DB
         register = False
-        endianness = '<'
+        endianness = "<"
 
     command = Uint8()
     token = Uint16()
     database = Uint8(enum=BlobDatabaseID)
-    content = Union(command, {
-        0x01: InsertCommand,
-        0x04: DeleteCommand,
-        0x05: ClearCommand,
-    })
+    content = Union(
+        command,
+        {
+            0x01: InsertCommand,
+            0x04: DeleteCommand,
+            0x05: ClearCommand,
+        },
+    )
 
 
 class BlobStatus(IntEnum):
@@ -66,8 +76,8 @@ class BlobStatus(IntEnum):
 
 class BlobResponse(PebblePacket):
     class Meta:
-        endpoint = 0xb1db
-        endianness = '<'
+        endpoint = 0xB1DB
+        endianness = "<"
 
     token = Uint16()
     response = Uint8(enum=BlobStatus)

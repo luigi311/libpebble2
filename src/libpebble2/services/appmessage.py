@@ -1,11 +1,27 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 import struct
 
 from libpebble2.events.mixin import EventSourceMixin
-from libpebble2.protocol.appmessage import AppMessage, AppMessageACK, AppMessageNACK, AppMessagePush, AppMessageTuple
+from libpebble2.protocol.appmessage import (
+    AppMessage,
+    AppMessageACK,
+    AppMessageNACK,
+    AppMessagePush,
+    AppMessageTuple,
+)
 
-__all__ = ["AppMessageService", "Uint8", "Uint16", "Uint32", "Int8", "Int16", "Int32", "CString", "ByteArray"]
+__all__ = [
+    "AppMessageService",
+    "Uint8",
+    "Uint16",
+    "Uint32",
+    "Int8",
+    "Int16",
+    "Int32",
+    "CString",
+    "ByteArray",
+]
 
 
 class AppMessageService(EventSourceMixin):
@@ -24,13 +40,14 @@ class AppMessageService(EventSourceMixin):
     :param message_type: The endpoint to operate on, if not the default ``AppMessage`` endpoint.
     :type message_type: .PebblePacket
     """
+
     _type_mapping = {
-        (AppMessageTuple.Type.Int, 1): 'b',
-        (AppMessageTuple.Type.Int, 2): 'h',
-        (AppMessageTuple.Type.Int, 4): 'i',
-        (AppMessageTuple.Type.Uint, 1): 'B',
-        (AppMessageTuple.Type.Uint, 2): 'H',
-        (AppMessageTuple.Type.Uint, 4): 'I',
+        (AppMessageTuple.Type.Int, 1): "b",
+        (AppMessageTuple.Type.Int, 2): "h",
+        (AppMessageTuple.Type.Int, 4): "i",
+        (AppMessageTuple.Type.Uint, 1): "B",
+        (AppMessageTuple.Type.Uint, 2): "H",
+        (AppMessageTuple.Type.Uint, 4): "I",
     }
 
     def __init__(self, pebble, message_type=AppMessage):
@@ -39,7 +56,9 @@ class AppMessageService(EventSourceMixin):
         self._pending_messages = {}
         self._message_type = message_type
         super(AppMessageService, self).__init__()
-        self._handle = self._pebble.register_endpoint(self._message_type, self._handle_message)
+        self._handle = self._pebble.register_endpoint(
+            self._message_type, self._handle_message
+        )
 
     def _handle_message(self, packet):
         assert isinstance(packet, AppMessage)
@@ -51,11 +70,19 @@ class AppMessageService(EventSourceMixin):
                 if t.type == AppMessageTuple.Type.ByteArray:
                     result[t.key] = bytearray(t.data)
                 elif t.type == AppMessageTuple.Type.CString:
-                    result[t.key] = t.data.split(b'\x00')[0].decode('utf-8', errors='replace')
+                    result[t.key] = t.data.split(b"\x00")[0].decode(
+                        "utf-8", errors="replace"
+                    )
                 else:
-                    result[t.key], = struct.unpack(self._type_mapping[(t.type, t.length)], t.data)
-            self._broadcast_event("appmessage", packet.transaction_id, message.uuid, result)
-            self._pebble.send_packet(AppMessage(transaction_id=packet.transaction_id, data=AppMessageACK()))
+                    (result[t.key],) = struct.unpack(
+                        self._type_mapping[(t.type, t.length)], t.data
+                    )
+            self._broadcast_event(
+                "appmessage", packet.transaction_id, message.uuid, result
+            )
+            self._pebble.send_packet(
+                AppMessage(transaction_id=packet.transaction_id, data=AppMessageACK())
+            )
         else:
             if packet.transaction_id in self._pending_messages:
                 uuid = self._pending_messages[packet.transaction_id]
@@ -110,10 +137,19 @@ class AppMessageService(EventSourceMixin):
         tuples = []
         for k, v in dictionary.items():
             if isinstance(v, AppMessageNumber):
-                tuples.append(AppMessageTuple(key=k, type=v.type,
-                                data=struct.pack(self._type_mapping[v.type, v.length], v.value)))
+                tuples.append(
+                    AppMessageTuple(
+                        key=k,
+                        type=v.type,
+                        data=struct.pack(self._type_mapping[v.type, v.length], v.value),
+                    )
+                )
             elif v.type == AppMessageTuple.Type.CString:
-                tuples.append(AppMessageTuple(key=k, type=v.type, data=v.value.encode('utf-8') + b'\x00'))
+                tuples.append(
+                    AppMessageTuple(
+                        key=k, type=v.type, data=v.value.encode("utf-8") + b"\x00"
+                    )
+                )
             elif v.type == AppMessageTuple.Type.ByteArray:
                 tuples.append(AppMessageTuple(key=k, type=v.type, data=v.value))
         message.data = AppMessagePush(uuid=target_app, dictionary=tuples)
@@ -130,7 +166,7 @@ class AppMessageService(EventSourceMixin):
         self._pebble.unregister_endpoint(self._handle)
 
     def _get_txid(self):
-        self._current_txid = (self._current_txid + 1) % 0xff
+        self._current_txid = (self._current_txid + 1) % 0xFF
         return self._current_txid
 
 
@@ -150,6 +186,7 @@ class Uint8(AppMessageNumber):
     """
     Represents a uint8_t
     """
+
     type = AppMessageTuple.Type.Uint
     length = 1
 
@@ -158,6 +195,7 @@ class Uint16(AppMessageNumber):
     """
     Represents a uint16_t
     """
+
     type = AppMessageTuple.Type.Uint
     length = 2
 
@@ -166,6 +204,7 @@ class Uint32(AppMessageNumber):
     """
     Represents a uint32_t
     """
+
     type = AppMessageTuple.Type.Uint
     length = 4
 
@@ -174,6 +213,7 @@ class Int8(AppMessageNumber):
     """
     Represents an int8_t
     """
+
     type = AppMessageTuple.Type.Int
     length = 1
 
@@ -182,6 +222,7 @@ class Int16(AppMessageNumber):
     """
     Represents an int16_t
     """
+
     type = AppMessageTuple.Type.Int
     length = 2
 
@@ -190,6 +231,7 @@ class Int32(AppMessageNumber):
     """
     Represents an int32_t
     """
+
     type = AppMessageTuple.Type.Int
     length = 4
 
@@ -198,6 +240,7 @@ class CString(AppMessageType):
     """
     Represents a char *
     """
+
     type = AppMessageTuple.Type.CString
 
 
@@ -205,4 +248,5 @@ class ByteArray(AppMessageType):
     """
     Represents a uint8_t *
     """
+
     type = AppMessageTuple.Type.ByteArray

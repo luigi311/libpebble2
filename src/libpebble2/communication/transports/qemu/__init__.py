@@ -1,11 +1,17 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 import socket
 
 from .. import BaseTransport, MessageTarget, MessageTargetWatch
-from .protocol import QemuPacket, QemuInboundPacket, QemuSPP, QemuRawPacket, HEADER_SIGNATURE, FOOTER_SIGNATURE
+from .protocol import (
+    QemuPacket,
+    QemuInboundPacket,
+    QemuSPP,
+    QemuRawPacket,
+    HEADER_SIGNATURE,
+    FOOTER_SIGNATURE,
+)
 from libpebble2.exceptions import ConnectionError, PacketDecodeError
-
 
 class MessageTargetQemu(MessageTarget):
     """
@@ -18,6 +24,7 @@ class MessageTargetQemu(MessageTarget):
     :param raw: If ``True``, the message is pre-serialised and will be sent as-is after adding framing.
     :type raw: :any:`bool`
     """
+
     def __init__(self, protocol=None, raw=False):
         self.protocol = protocol
         self.raw = raw
@@ -32,15 +39,16 @@ class QemuTransport(BaseTransport):
     :param port: The port on which the QEMU instance has exposed its Pebble QEMU Protocol port.
     :type port: int
     """
+
     #: Number of bytes read from the socket at a time.
     BUFFER_SIZE = 2048
     must_initialise = True
 
-    def __init__(self, host='127.0.0.1', port=12344):
+    def __init__(self, host="127.0.0.1", port=12344):
         self.host = host
         self.port = port
         self.socket = None
-        self.assembled_data = b''
+        self.assembled_data = b""
         self._connected = False
 
     def connect(self):
@@ -64,18 +72,23 @@ class QemuTransport(BaseTransport):
                     pass
                 else:
                     self.assembled_data = self.assembled_data[length:]
-                    if packet.signature == HEADER_SIGNATURE and packet.footer == FOOTER_SIGNATURE:
+                    if (
+                        packet.signature == HEADER_SIGNATURE
+                        and packet.footer == FOOTER_SIGNATURE
+                    ):
                         if isinstance(packet.data, QemuSPP):
                             return MessageTargetWatch(), packet.data.payload
                         else:
                             return MessageTargetQemu(packet.protocol), packet.data
                     else:
-                        raise PacketDecodeError("QemuTransport: signature mismatch ({:x} = {:x}, {:x} = {:x})".format(
-                            packet.signature,
-                            HEADER_SIGNATURE,
-                            packet.footer,
-                            FOOTER_SIGNATURE,
-                        ))
+                        raise PacketDecodeError(
+                            "QemuTransport: signature mismatch ({:x} = {:x}, {:x} = {:x})".format(
+                                packet.signature,
+                                HEADER_SIGNATURE,
+                                packet.footer,
+                                FOOTER_SIGNATURE,
+                            )
+                        )
             try:
                 received = self.socket.recv(self.BUFFER_SIZE)
                 if len(received) == 0:
@@ -95,15 +108,21 @@ class QemuTransport(BaseTransport):
                     bytes_to_send = bytes_left
                     if bytes_to_send > self.BUFFER_SIZE:
                         bytes_to_send = self.BUFFER_SIZE
-                    chunk = message[start_idx:start_idx+bytes_to_send]
-                    self.socket.send(QemuPacket(data=QemuSPP(payload=chunk)).serialise())
+                    chunk = message[start_idx : start_idx + bytes_to_send]
+                    self.socket.send(
+                        QemuPacket(data=QemuSPP(payload=chunk)).serialise()
+                    )
                     bytes_left -= bytes_to_send
                     start_idx += bytes_to_send
             elif isinstance(target, MessageTargetQemu):
                 if not target.raw:
                     self.socket.send(QemuPacket(data=message).serialise())
                 else:
-                    self.socket.send(QemuRawPacket(protocol=target.protocol, data=message).serialise())
+                    self.socket.send(
+                        QemuRawPacket(
+                            protocol=target.protocol, data=message
+                        ).serialise()
+                    )
             else:
                 assert False
         except socket.error as e:

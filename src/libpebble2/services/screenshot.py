@@ -1,8 +1,12 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from libpebble2.events.mixin import EventSourceMixin
 from libpebble2.exceptions import ScreenshotError
-from libpebble2.protocol.screenshots import ScreenshotRequest, ScreenshotHeader, ScreenshotResponse
+from libpebble2.protocol.screenshots import (
+    ScreenshotRequest,
+    ScreenshotHeader,
+    ScreenshotResponse,
+)
 
 
 class Screenshot(EventSourceMixin):
@@ -12,6 +16,7 @@ class Screenshot(EventSourceMixin):
     :param pebble: The pebble of which to take a screenshot.
     :type pebble: .PebbleConnection
     """
+
     def __init__(self, pebble):
         self._pebble = pebble
         super(Screenshot, self).__init__()
@@ -36,7 +41,9 @@ class Screenshot(EventSourceMixin):
         header = ScreenshotHeader.parse(data)[0]
         if header.response_code != ScreenshotHeader.ResponseCode.OK:
             queue.close()
-            raise ScreenshotError("Screenshot failed: {!s}".format(header.response_code))
+            raise ScreenshotError(
+                "Screenshot failed: {!s}".format(header.response_code)
+            )
         data = header.data
         expected_size = self._get_expected_bytes(header)
         while len(data) < expected_size:
@@ -52,7 +59,9 @@ class Screenshot(EventSourceMixin):
         elif header.version == 2:
             return header.width * header.height
         else:
-            raise ScreenshotError("Unknown screenshot version: {}".format(header.version))
+            raise ScreenshotError(
+                "Unknown screenshot version: {}".format(header.version)
+            )
 
     @classmethod
     def _decode_image(cls, header, data):
@@ -68,7 +77,7 @@ class Screenshot(EventSourceMixin):
         for row in range(header.height):
             row_values = []
             for column in range(header.width):
-                pixel = (data[row*row_bytes + column//8] >> (column % 8)) & 1
+                pixel = (data[row * row_bytes + column // 8] >> (column % 8)) & 1
                 row_values.extend([pixel * 255] * 3)
             output.append(bytearray(row_values))
         return output
@@ -79,11 +88,13 @@ class Screenshot(EventSourceMixin):
         for row in range(header.height):
             row_values = []
             for column in range(header.width):
-                pixel = data[row*header.width + column]
-                row_values.extend([
-                    ((pixel >> 4) & 0b11) * 85,
-                    ((pixel >> 2) & 0b11) * 85,
-                    ((pixel >> 0) & 0b11) * 85,
-                ])
+                pixel = data[row * header.width + column]
+                row_values.extend(
+                    [
+                        ((pixel >> 4) & 0b11) * 85,
+                        ((pixel >> 2) & 0b11) * 85,
+                        ((pixel >> 0) & 0b11) * 85,
+                    ]
+                )
             output.append(bytearray(row_values))
         return output

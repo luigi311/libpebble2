@@ -1,13 +1,22 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from enum import IntEnum
 
 from .base import PebblePacket
 from .base.types import Optional, PascalString, Uint16, Uint32, Uint8, Union
 
-__all__ = ["MusicControlPlayPause", "MusicControlPause", "MusicControlPlay", "MusicControlNextTrack",
-           "MusicControlPreviousTrack", "MusicControlVolumeUp", "MusicControlVolumeDown", "MusicControlGetCurrentTrack",
-           "MusicControlUpdateCurrentTrack", "MusicControl"]
+__all__ = [
+    "MusicControlPlayPause",
+    "MusicControlPause",
+    "MusicControlPlay",
+    "MusicControlNextTrack",
+    "MusicControlPreviousTrack",
+    "MusicControlVolumeUp",
+    "MusicControlVolumeDown",
+    "MusicControlGetCurrentTrack",
+    "MusicControlUpdateCurrentTrack",
+    "MusicControl",
+]
 
 
 class MusicControlPlayPause(PebblePacket):
@@ -89,20 +98,23 @@ class MusicControlUpdatePlayerInfo(PebblePacket):
 class MusicControl(PebblePacket):
     class Meta:
         endpoint = 0x20
-        endianness = '<'
+        endianness = "<"
 
     command = Uint8()
-    data = Union(command, {
-        0x01: MusicControlPlayPause,
-        0x02: MusicControlPause,
-        0x03: MusicControlPlay,
-        0x04: MusicControlNextTrack,
-        0x05: MusicControlPreviousTrack,
-        0x06: MusicControlVolumeUp,
-        0x07: MusicControlVolumeDown,
-        0x08: MusicControlGetCurrentTrack,
-        0x10: MusicControlUpdateCurrentTrack,
-        0x11: MusicControlUpdatePlayStateInfo,
-        0x12: MusicControlUpdateVolumeInfo,
-        0x13: MusicControlUpdatePlayerInfo,
-    })
+    data = Union(
+        command,
+        {
+            0x01: MusicControlPlayPause,
+            0x02: MusicControlPause,
+            0x03: MusicControlPlay,
+            0x04: MusicControlNextTrack,
+            0x05: MusicControlPreviousTrack,
+            0x06: MusicControlVolumeUp,
+            0x07: MusicControlVolumeDown,
+            0x08: MusicControlGetCurrentTrack,
+            0x10: MusicControlUpdateCurrentTrack,
+            0x11: MusicControlUpdatePlayStateInfo,
+            0x12: MusicControlUpdateVolumeInfo,
+            0x13: MusicControlUpdatePlayerInfo,
+        },
+    )

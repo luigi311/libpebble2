@@ -1,22 +1,45 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from enum import IntEnum
 
 from .appmessage import AppMessage
 from .base import PebblePacket
-from .base.types import Boolean, FixedList, FixedString, PascalString, Uint8, Uint32, Union, UUID
+from .base.types import (
+    Boolean,
+    FixedList,
+    FixedString,
+    PascalString,
+    Uint8,
+    Uint32,
+    Union,
+    UUID,
+)
 
-__all__ = ["LegacyNotification", "LegacyBankInfoRequest", "LegacyRemoveAppUUID", "LegacyUpgradeAppUUID",
-           "LegacyAppAvailable", "LegacyListInstalledUUIDs", "LegacyDescribeInstalledUUID",
-           "LegacyCurrentAppRequest", "LegacyAppInstallRequest", "LegacyBankEntry", "LegacyBankInfoResponse",
-           "LegacyAppInstallResult", "LegacyAppUUIDsResult", "LegacyAppDescribeResponse", "LegacyCurrentAppResponse",
-           "LegacyAppInstallResponse", "LegacyAppLaunchMessage"]
+__all__ = [
+    "LegacyNotification",
+    "LegacyBankInfoRequest",
+    "LegacyRemoveAppUUID",
+    "LegacyUpgradeAppUUID",
+    "LegacyAppAvailable",
+    "LegacyListInstalledUUIDs",
+    "LegacyDescribeInstalledUUID",
+    "LegacyCurrentAppRequest",
+    "LegacyAppInstallRequest",
+    "LegacyBankEntry",
+    "LegacyBankInfoResponse",
+    "LegacyAppInstallResult",
+    "LegacyAppUUIDsResult",
+    "LegacyAppDescribeResponse",
+    "LegacyCurrentAppResponse",
+    "LegacyAppInstallResponse",
+    "LegacyAppLaunchMessage",
+]
 
 
 class LegacyNotification(PebblePacket):
     class Meta:
         endpoint = 3000
-        endianness = '<'
+        endianness = "<"
 
     class Source(IntEnum):
         Email = 0
@@ -66,15 +89,18 @@ class LegacyAppInstallRequest(PebblePacket):
         register = False
 
     command = Uint8()
-    data = Union(command, {
-        0x01: LegacyBankInfoRequest,
-        0x02: LegacyRemoveAppUUID,
-        0x08: LegacyUpgradeAppUUID,
-        0x03: LegacyAppAvailable,
-        0x05: LegacyListInstalledUUIDs,
-        0x06: LegacyDescribeInstalledUUID,
-        0x07: LegacyCurrentAppRequest
-    })
+    data = Union(
+        command,
+        {
+            0x01: LegacyBankInfoRequest,
+            0x02: LegacyRemoveAppUUID,
+            0x08: LegacyUpgradeAppUUID,
+            0x03: LegacyAppAvailable,
+            0x05: LegacyListInstalledUUIDs,
+            0x06: LegacyDescribeInstalledUUID,
+            0x07: LegacyCurrentAppRequest,
+        },
+    )
 
 
 class LegacyBankEntry(PebblePacket):
@@ -109,6 +135,7 @@ class LegacyAppInstallResult(PebblePacket):
         InstallIDMismatch = 3
         RemoveInvalidCommand = 4
         RemoveGeneralFailure = 5
+
     status = Uint32(enum=Status)
 
 
@@ -133,19 +160,22 @@ class LegacyAppInstallResponse(PebblePacket):
         endpoint = 6000
 
     command = Uint8()
-    data = Union(command, {
-        0x01: LegacyBankInfoResponse,
-        0x02: LegacyAppInstallResult,
-        0x05: LegacyAppUUIDsResult,
-        0x06: LegacyAppDescribeResponse,
-        0x07: LegacyCurrentAppResponse,
-    })
+    data = Union(
+        command,
+        {
+            0x01: LegacyBankInfoResponse,
+            0x02: LegacyAppInstallResult,
+            0x05: LegacyAppUUIDsResult,
+            0x06: LegacyAppDescribeResponse,
+            0x07: LegacyCurrentAppResponse,
+        },
+    )
 
 
 class LegacyAppLaunchMessage(AppMessage):
     class Meta:
         endpoint = 0x31
-        endianness = '<'
+        endianness = "<"
 
     class Keys(IntEnum):
         RunState = 0x01

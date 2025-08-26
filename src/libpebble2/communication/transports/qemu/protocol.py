@@ -1,9 +1,20 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from enum import IntEnum
 
 from libpebble2.protocol.base import PebblePacket
-from libpebble2.protocol.base.types import BinaryArray, Boolean, FixedList, Int16, Int8, Optional, Uint16, Uint32, Uint8, Union
+from libpebble2.protocol.base.types import (
+    BinaryArray,
+    Boolean,
+    FixedList,
+    Int16,
+    Int8,
+    Optional,
+    Uint16,
+    Uint32,
+    Uint8,
+    Union,
+)
 
 HEADER_SIGNATURE = 0xFEED
 FOOTER_SIGNATURE = 0xBEEF
@@ -93,18 +104,22 @@ class QemuPacket(PebblePacket):
     signature = Uint16(default=HEADER_SIGNATURE)
     protocol = Uint16()
     length = Uint16()
-    data = Union(protocol, {
-        1: QemuSPP,
-        2: QemuTap,
-        3: QemuBluetoothConnection,
-        4: QemuCompass,
-        5: QemuBattery,
-        6: QemuAccel,
-        8: QemuButton,
-        9: QemuTimeFormat,
-        10: QemuTimelinePeek,
-        11: QemuContentSize,
-    }, length=length)
+    data = Union(
+        protocol,
+        {
+            1: QemuSPP,
+            2: QemuTap,
+            3: QemuBluetoothConnection,
+            4: QemuCompass,
+            5: QemuBattery,
+            6: QemuAccel,
+            8: QemuButton,
+            9: QemuTimeFormat,
+            10: QemuTimelinePeek,
+            11: QemuContentSize,
+        },
+        length=length,
+    )
     footer = Uint16(default=FOOTER_SIGNATURE)
 
 
@@ -112,11 +127,15 @@ class QemuInboundPacket(PebblePacket):
     signature = Uint16(default=HEADER_SIGNATURE)
     protocol = Uint16()
     length = Uint16()
-    data = Union(protocol, {
-        1: QemuSPP,
-        6: QemuAccelResponse,
-        7: QemuVibration,
-    }, length=length)
+    data = Union(
+        protocol,
+        {
+            1: QemuSPP,
+            6: QemuAccelResponse,
+            7: QemuVibration,
+        },
+        length=length,
+    )
     footer = Uint16(default=FOOTER_SIGNATURE)
 
 

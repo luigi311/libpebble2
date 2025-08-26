@@ -1,6 +1,7 @@
 from libpebble2.protocol.legacy2 import LegacyNotification
 from libpebble2.protocol.timeline import TimelineAction, TimelineAttribute, TimelineItem
-__author__ = 'katharine'
+
+__author__ = "katharine"
 
 from libpebble2.protocol.blobdb import BlobDatabaseID
 from libpebble2.services.blobdb import BlobDBClient, SyncWrapper
@@ -25,11 +26,14 @@ class Notifications(object):
     :type pebble: .PebbleConnection
     :param blobdb: An existing :class:`BlobDBClient`, if any. If necessary, one will be created.
     """
+
     def __init__(self, pebble, blobdb=None):
         self._pebble = pebble
         self._blobdb = blobdb or BlobDBClient(pebble)
 
-    def send_notification(self, subject="", message="", sender="", source=None, actions=None):
+    def send_notification(
+        self, subject="", message="", sender="", source=None, actions=None
+    ):
         """
         Sends a notification. Blocks as long as necessary.
 
@@ -53,10 +57,15 @@ class Notifications(object):
         if source is None:
             source = LegacyNotification.Source.SMS
         ts = str(int(time.time() * 1000))
-        self._pebble.send_packet(LegacyNotification(type=source, timestamp=ts, subject=subject, body=message,
-                                                    sender=sender))
+        self._pebble.send_packet(
+            LegacyNotification(
+                type=source, timestamp=ts, subject=subject, body=message, sender=sender
+            )
+        )
 
-    def _send_modern_notification(self, subject, message, sender, source, additional_actions):
+    def _send_modern_notification(
+        self, subject, message, sender, source, additional_actions
+    ):
         source_map = {
             None: 1,
             NotificationSource.Email: 19,
@@ -65,20 +74,28 @@ class Notifications(object):
             NotificationSource.Twitter: 6,
         }
         attributes = [
-            TimelineAttribute(attribute_id=0x01, content=sender.encode('utf-8')),
-            TimelineAttribute(attribute_id=4, content=struct.pack('<I', source_map[source]))
+            TimelineAttribute(attribute_id=0x01, content=sender.encode("utf-8")),
+            TimelineAttribute(
+                attribute_id=4, content=struct.pack("<I", source_map[source])
+            ),
         ]
         if message:
-            attributes.append(TimelineAttribute(attribute_id=0x03, content=message.encode('utf-8')))
+            attributes.append(
+                TimelineAttribute(attribute_id=0x03, content=message.encode("utf-8"))
+            )
 
-        attributes.append(TimelineAttribute(attribute_id=0x02, content=subject.encode('utf-8')))
+        attributes.append(
+            TimelineAttribute(attribute_id=0x02, content=subject.encode("utf-8"))
+        )
         item_id = uuid.uuid4()
 
-        actions = [TimelineAction(action_id=0, type=TimelineAction.Type.Dismiss,
-                                  attributes=[
-                                      TimelineAttribute(attribute_id=0x01, content=b"Dismiss")
-                                  ])
-                   ]
+        actions = [
+            TimelineAction(
+                action_id=0,
+                type=TimelineAction.Type.Dismiss,
+                attributes=[TimelineAttribute(attribute_id=0x01, content=b"Dismiss")],
+            )
+        ]
         if additional_actions:
             actions.extend(additional_actions)
 
@@ -91,6 +108,11 @@ class Notifications(object):
             flags=0,
             layout=0x01,
             attributes=attributes,
-            actions=actions
+            actions=actions,
         )
-        SyncWrapper(self._blobdb.insert, BlobDatabaseID.Notification, item_id, notification.serialise()).wait()
+        SyncWrapper(
+            self._blobdb.insert,
+            BlobDatabaseID.Notification,
+            item_id,
+            notification.serialise(),
+        ).wait()

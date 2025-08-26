@@ -1,4 +1,4 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from collections import namedtuple, OrderedDict
 import random
@@ -8,7 +8,14 @@ from queue import Queue
 
 from libpebble2.events.mixin import EventSourceMixin
 from libpebble2.exceptions import TimeoutError
-from libpebble2.protocol.blobdb import BlobResponse, BlobCommand, InsertCommand, DeleteCommand, ClearCommand, BlobStatus
+from libpebble2.protocol.blobdb import (
+    BlobResponse,
+    BlobCommand,
+    InsertCommand,
+    DeleteCommand,
+    ClearCommand,
+    BlobStatus,
+)
 
 __all__ = ["BlobDBClient", "SyncWrapper"]
 
@@ -30,8 +37,9 @@ class BlobDBClient(EventSourceMixin):
     :param timeout: The timeout before resending a BlobDB command.
     :type timeout: int
     """
-    _PendingItem = namedtuple('_PendingItem', ('token', 'data', 'callback'))
-    _PendingAck = namedtuple('_PendingAck', ('timestamp', 'data', 'callback'))
+
+    _PendingItem = namedtuple("_PendingItem", ("token", "data", "callback"))
+    _PendingAck = namedtuple("_PendingAck", ("timestamp", "data", "callback"))
 
     def __init__(self, pebble, timeout=5):
         self._pebble = pebble
@@ -69,9 +77,17 @@ class BlobDBClient(EventSourceMixin):
         :param callback: A callback to be called on success or failure.
         """
         token = self._get_token()
-        self._enqueue(self._PendingItem(token, BlobCommand(token=token, database=database,
-                                                           content=InsertCommand(key=key.bytes, value=value)),
-                                        callback))
+        self._enqueue(
+            self._PendingItem(
+                token,
+                BlobCommand(
+                    token=token,
+                    database=database,
+                    content=InsertCommand(key=key.bytes, value=value),
+                ),
+                callback,
+            )
+        )
 
     def delete(self, database, key, callback=None):
         """
@@ -84,9 +100,15 @@ class BlobDBClient(EventSourceMixin):
         :param callback: A callback to be called on success or failure.
         """
         token = self._get_token()
-        self._enqueue(self._PendingItem(token, BlobCommand(token=token, database=database,
-                                                           content=DeleteCommand(key=key.bytes)),
-                                        callback))
+        self._enqueue(
+            self._PendingItem(
+                token,
+                BlobCommand(
+                    token=token, database=database, content=DeleteCommand(key=key.bytes)
+                ),
+                callback,
+            )
+        )
 
     def clear(self, database, callback=None):
         """
@@ -98,9 +120,13 @@ class BlobDBClient(EventSourceMixin):
         :param callback: A callback to be called on success or failure.
         """
         token = self._get_token()
-        self._enqueue(self._PendingItem(token, BlobCommand(token=token, database=database,
-                                                           content=ClearCommand()),
-                                        callback))
+        self._enqueue(
+            self._PendingItem(
+                token,
+                BlobCommand(token=token, database=database, content=ClearCommand()),
+                callback,
+            )
+        )
 
     def _check_pending_acks(self):
         while self._running:
@@ -110,7 +136,9 @@ class BlobDBClient(EventSourceMixin):
                 for token, pending in list(self._pending_ack.items()):
                     if now - pending.timestamp > self._timeout:
                         del self._pending_ack[token]
-                        self._enqueue(self._PendingItem(token, pending.data, pending.callback))
+                        self._enqueue(
+                            self._PendingItem(token, pending.data, pending.callback)
+                        )
             time.sleep(5)
 
     def _send_queued_data(self):
@@ -150,6 +178,7 @@ class SyncWrapper(object):
     :param method: The method to call.
     :param args: Arguments to pass to the method.
     """
+
     def __init__(self, method, *args, **kwargs):
         self.event = threading.Event()
         self.result = None

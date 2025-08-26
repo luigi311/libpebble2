@@ -1,18 +1,35 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from enum import IntEnum
 
 from .base import PebblePacket
-from .base.types import BinaryArray, FixedList, FixedString, Uint16, Uint32, Uint8, Union, UUID
+from .base.types import (
+    BinaryArray,
+    FixedList,
+    FixedString,
+    Uint16,
+    Uint32,
+    Uint8,
+    Union,
+    UUID,
+)
 
-__all__ = ["AppMessageTuple", "AppMessagePush", "AppMessageACK", "AppMessageNACK", "AppMessage", "StockAppSetTitle",
-           "StockAppSetIcon"]
+__all__ = [
+    "AppMessageTuple",
+    "AppMessagePush",
+    "AppMessageACK",
+    "AppMessageNACK",
+    "AppMessage",
+    "StockAppSetTitle",
+    "StockAppSetIcon",
+]
 
 
 class AppMessageTuple(PebblePacket):
     """
     Represents a tuple in an AppMessage dictionary.
     """
+
     class Type(IntEnum):
         ByteArray = 0
         CString = 1
@@ -42,21 +59,24 @@ class AppMessageNACK(PebblePacket):
 class AppMessage(PebblePacket):
     class Meta:
         endpoint = 0x30
-        endianness = '<'
+        endianness = "<"
 
     command = Uint8()
     transaction_id = Uint8()
-    data = Union(command, {
-        0x01: AppMessagePush,
-        0xff: AppMessageACK,
-        0x7f: AppMessageNACK,
-    })
+    data = Union(
+        command,
+        {
+            0x01: AppMessagePush,
+            0xFF: AppMessageACK,
+            0x7F: AppMessageNACK,
+        },
+    )
 
 
 class StockAppSetTitle(PebblePacket):
     class Meta:
         endpoint = 0x32
-        endianness = '<'
+        endianness = "<"
         register = False
 
     class App(IntEnum):
@@ -70,7 +90,7 @@ class StockAppSetTitle(PebblePacket):
 class StockAppSetIcon(PebblePacket):
     class Meta:
         endpoint = 0x32
-        endianness = '<'
+        endianness = "<"
         register = False
 
     class App(IntEnum):

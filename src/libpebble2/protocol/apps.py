@@ -1,11 +1,17 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from enum import IntEnum
 
 from .base import PebblePacket
 from .base.types import FixedString, Int32, Uint8, Uint32, UUID, Union
 
-__all__ = ["AppRunState", "AppRunStateStart", "AppRunStateStop", "AppRunStateRequest", "AppMetadata"]
+__all__ = [
+    "AppRunState",
+    "AppRunStateStart",
+    "AppRunStateStop",
+    "AppRunStateRequest",
+    "AppMetadata",
+]
 
 # App run state
 
@@ -25,14 +31,18 @@ class AppRunStateRequest(PebblePacket):
 class AppRunState(PebblePacket):
     class Meta:
         endpoint = 0x34
-        endianness = '<'
+        endianness = "<"
 
     command = Uint8()
-    data = Union(command, {
-        0x01: AppRunStateStart,
-        0x02: AppRunStateStop,
-        0x03: AppRunStateRequest,
-    })
+    data = Union(
+        command,
+        {
+            0x01: AppRunStateStart,
+            0x02: AppRunStateStop,
+            0x03: AppRunStateRequest,
+        },
+    )
+
 
 # App fetch
 
@@ -40,7 +50,7 @@ class AppRunState(PebblePacket):
 class AppFetchRequest(PebblePacket):
     class Meta:
         endpoint = 0x1771
-        endianness = '<'
+        endianness = "<"
 
     command = Uint8(default=0x01)
     uuid = UUID()
@@ -57,7 +67,7 @@ class AppFetchStatus(IntEnum):
 class AppFetchResponse(PebblePacket):
     class Meta:
         endpoint = 0x1771
-        endianness = '<'
+        endianness = "<"
         register = False
 
     command = Uint8(default=0x01)
@@ -68,8 +78,9 @@ class AppMetadata(PebblePacket):
     """
     This represents an entry in the appdb.
     """
+
     class Meta:
-        endianness = '<'
+        endianness = "<"
 
     uuid = UUID()
     flags = Uint32()

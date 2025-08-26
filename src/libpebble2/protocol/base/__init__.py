@@ -1,5 +1,6 @@
 from __future__ import print_function, absolute_import
-__author__ = 'katharine'
+
+__author__ = "katharine"
 
 from binascii import hexlify
 import collections
@@ -20,6 +21,7 @@ def make_output(thing):
     class C(object):
         def __repr__(self):
             return thing
+
     return C()
 
 
@@ -28,23 +30,24 @@ class PacketType(type):
     Metaclass for :class:`PebblePacket` that transforms properties that are subclasses of :class:`Field` into a
     Pebble Protocol parser.
     """
+
     def __new__(mcs, name, bases, dct):
         mapping = []
         # If we have a _Meta property, delete it.
-        if '_Meta' in dct:
-            del dct['_Meta']
+        if "_Meta" in dct:
+            del dct["_Meta"]
         # If we have a Meta property, move it to _Meta. This effectively prevents it being inherited.
-        if 'Meta' in dct:
-            dct['_Meta'] = dct['Meta'].__dict__
-            del dct['Meta']
+        if "Meta" in dct:
+            dct["_Meta"] = dct["Meta"].__dict__
+            del dct["Meta"]
 
         # For each Field, add it to our mapping, then set the exposed value to its default value.
         # We go through the classes we inherited from to add anything in there.
         # This means that inheritance works, with inherited classes appending their fields to the end.
-        dct['_type_mapping'] = collections.OrderedDict()
+        dct["_type_mapping"] = collections.OrderedDict()
         for base in bases:
-            if hasattr(base, '_type_mapping'):
-                dct['_type_mapping'].update(getattr(base, '_type_mapping'))
+            if hasattr(base, "_type_mapping"):
+                dct["_type_mapping"].update(getattr(base, "_type_mapping"))
         for k, v in dct.items():
             if not isinstance(v, Field):
                 continue
@@ -53,15 +56,17 @@ class PacketType(type):
             dct[k] = v._default
         # Put the results into an ordered dict. We sort on field_id to ensure that our dict ends up
         # in the correct order.
-        dct['_type_mapping'].update(collections.OrderedDict(sorted(mapping, key=lambda x: x[1].field_id)))
+        dct["_type_mapping"].update(
+            collections.OrderedDict(sorted(mapping, key=lambda x: x[1].field_id))
+        )
         return super(PacketType, mcs).__new__(mcs, name, bases, dct)
 
     def __init__(cls, name, bases, dct):
         # At this point we actually have a references to the class, so we can register it
         # in our packet type registry for later decoding.
-        if hasattr(cls, '_Meta'):
-            if 'endpoint' in cls._Meta and cls._Meta.get('register', True):
-                _PacketRegistry[cls._Meta['endpoint']] = cls
+        if hasattr(cls, "_Meta"):
+            if "endpoint" in cls._Meta and cls._Meta.get("register", True):
+                _PacketRegistry[cls._Meta["endpoint"]] = cls
         # Fill in all of the fields with a reference to this class.
         # TODO: This isn't used any more; remove it?
         for k, v in cls._type_mapping.items():
@@ -100,10 +105,13 @@ class PebblePacket(metaclass=PacketType):
 
     :param **kwargs: Initial values for any properties on the object.
     """
+
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
-            if k.startswith('_'):
-                raise AttributeError("You cannot set internal properties during construction.")
+            if k.startswith("_"):
+                raise AttributeError(
+                    "You cannot set internal properties during construction."
+                )
             getattr(self, k)  # Throws an exception if the property doesn't exist.
             setattr(self, k, v)
 
@@ -119,9 +127,9 @@ class PebblePacket(metaclass=PacketType):
         :rtype: bytes
         """
         # Figure out an endianness.
-        endianness = (default_endianness or DEFAULT_ENDIANNESS)
-        if hasattr(self, '_Meta'):
-            endianness = self._Meta.get('endianness', endianness)
+        endianness = default_endianness or DEFAULT_ENDIANNESS
+        if hasattr(self, "_Meta"):
+            endianness = self._Meta.get("endianness", endianness)
 
         inferred_fields = set()
         for k, v in self._type_mapping.items():
@@ -133,9 +141,11 @@ class PebblePacket(metaclass=PacketType):
         for k, v in self._type_mapping.items():
             v.prepare(self, getattr(self, k))
 
-        message = b''
+        message = b""
         for k, v in self._type_mapping.items():
-            message += v.value_to_bytes(self, getattr(self, k), default_endianness=endianness)
+            message += v.value_to_bytes(
+                self, getattr(self, k), default_endianness=endianness
+            )
         return message
 
     def serialise_packet(self):
@@ -145,10 +155,12 @@ class PebblePacket(metaclass=PacketType):
 
         :return: A serialised message, ready to be sent to the Pebble.
         """
-        if not hasattr(self, '_Meta'):
-            raise ReferenceError("Can't serialise a packet that doesn't have an endpoint ID.")
+        if not hasattr(self, "_Meta"):
+            raise ReferenceError(
+                "Can't serialise a packet that doesn't have an endpoint ID."
+            )
         serialised = self.serialise()
-        return struct.pack('!HH', len(serialised), self._Meta['endpoint']) + serialised
+        return struct.pack("!HH", len(serialised), self._Meta["endpoint"]) + serialised
 
     @classmethod
     def parse_message(cls, message):
@@ -164,10 +176,10 @@ class PebblePacket(metaclass=PacketType):
         :return: ``(decoded_message, decoded length)``
         :rtype: (:class:`PebblePacket`, :any:`int`)
         """
-        length = struct.unpack_from('!H', message, 0)[0] + 4
+        length = struct.unpack_from("!H", message, 0)[0] + 4
         if len(message) < length:
             raise IncompleteMessage()
-        command, = struct.unpack_from('!H', message, 2)
+        (command,) = struct.unpack_from("!H", message, 2)
         if command in _PacketRegistry:
             return _PacketRegistry[command].parse(message[4:length])[0], length
         else:
@@ -190,11 +202,13 @@ class PebblePacket(metaclass=PacketType):
         """
         obj = cls()
         offset = 0
-        if hasattr(cls, '_Meta'):
-            default_endianness = cls._Meta.get('endianness', default_endianness)
+        if hasattr(cls, "_Meta"):
+            default_endianness = cls._Meta.get("endianness", default_endianness)
         for k, v in cls._type_mapping.items():
             try:
-                value, length = v.buffer_to_value(obj, message, offset, default_endianness=default_endianness)
+                value, length = v.buffer_to_value(
+                    obj, message, offset, default_endianness=default_endianness
+                )
             except Exception:
                 logger.warning("Exception decoding {}.{}".format(cls.__name__, k))
                 raise
@@ -203,8 +217,13 @@ class PebblePacket(metaclass=PacketType):
         return obj, offset
 
     def __repr__(self):
-        return "%s(%s)" % (type(self).__name__,
-                           ', '.join('%s=%s' % (k, self._format_repr(getattr(self, k))) for k in self._type_mapping.keys()))
+        return "%s(%s)" % (
+            type(self).__name__,
+            ", ".join(
+                "%s=%s" % (k, self._format_repr(getattr(self, k)))
+                for k in self._type_mapping.keys()
+            ),
+        )
 
     def __eq__(self, other):
         if not isinstance(other, PebblePacket):
@@ -227,6 +246,6 @@ class PebblePacket(metaclass=PacketType):
             if len(value) < 20:
                 return hexlify(value).decode()
             else:
-                return hexlify(value[:17]).decode() + '...'
+                return hexlify(value[:17]).decode() + "..."
         else:
             return value

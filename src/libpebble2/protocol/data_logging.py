@@ -1,15 +1,33 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from enum import IntEnum
 
 from .base import PebblePacket
-from .base.types import BinaryArray, Boolean, FixedList, Uint16, Uint32, Uint8, Union, UUID
+from .base.types import (
+    BinaryArray,
+    Boolean,
+    FixedList,
+    Uint16,
+    Uint32,
+    Uint8,
+    Union,
+    UUID,
+)
 
-__all__ = ["DataLoggingReportOpenSessions", "DataLoggingDespoolOpenSession",
-           "DataLoggingDespoolSendData", "DataLoggingCloseSession", "DataLoggingACK",
-           "DataLoggingNACK", "DataLogging", "DataLoggingTimeout", "DataLoggingEmptySession",
-           "DataLoggingGetSendEnableRequest", "DataLoggingGetSendEnableResponse",
-           "DataLoggingSetSendEnable"]
+__all__ = [
+    "DataLoggingReportOpenSessions",
+    "DataLoggingDespoolOpenSession",
+    "DataLoggingDespoolSendData",
+    "DataLoggingCloseSession",
+    "DataLoggingACK",
+    "DataLoggingNACK",
+    "DataLogging",
+    "DataLoggingTimeout",
+    "DataLoggingEmptySession",
+    "DataLoggingGetSendEnableRequest",
+    "DataLoggingGetSendEnableResponse",
+    "DataLoggingSetSendEnable",
+]
 
 
 class DataLoggingReportOpenSessions(PebblePacket):
@@ -52,34 +70,42 @@ class DataLoggingNACK(PebblePacket):
 class DataLoggingTimeout(PebblePacket):
     pass
 
+
 class DataLoggingEmptySession(PebblePacket):
     session_id = Uint8()
+
 
 class DataLoggingGetSendEnableRequest(PebblePacket):
     pass
 
+
 class DataLoggingGetSendEnableResponse(PebblePacket):
     enabled = Boolean()
+
 
 class DataLoggingSetSendEnable(PebblePacket):
     enabled = Boolean()
 
+
 class DataLogging(PebblePacket):
     class Meta:
-        endpoint = 0x1a7a
-        endianness = '<'
+        endpoint = 0x1A7A
+        endianness = "<"
 
     command = Uint8()
-    data = Union(command, {
-        0x01: DataLoggingDespoolOpenSession,
-        0x02: DataLoggingDespoolSendData,
-        0x03: DataLoggingCloseSession,
-        0x84: DataLoggingReportOpenSessions,
-        0x85: DataLoggingACK,
-        0x86: DataLoggingNACK,
-        0x07: DataLoggingTimeout,
-        0x88: DataLoggingEmptySession,
-        0x89: DataLoggingGetSendEnableRequest,
-        0x0A: DataLoggingGetSendEnableResponse,
-        0x8B: DataLoggingSetSendEnable,
-    })
+    data = Union(
+        command,
+        {
+            0x01: DataLoggingDespoolOpenSession,
+            0x02: DataLoggingDespoolSendData,
+            0x03: DataLoggingCloseSession,
+            0x84: DataLoggingReportOpenSessions,
+            0x85: DataLoggingACK,
+            0x86: DataLoggingNACK,
+            0x07: DataLoggingTimeout,
+            0x88: DataLoggingEmptySession,
+            0x89: DataLoggingGetSendEnableRequest,
+            0x0A: DataLoggingGetSendEnableResponse,
+            0x8B: DataLoggingSetSendEnable,
+        },
+    )

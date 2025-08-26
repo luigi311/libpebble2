@@ -1,4 +1,4 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from libpebble2.protocol.appglance import AppGlance
 from libpebble2.protocol.blobdb import BlobDatabaseID
@@ -19,6 +19,7 @@ class AppGlances(object):
     :type pebble: .PebbleConnection
     :param blobdb: An existing :class:`BlobDBClient`, if any. If necessary, one will be created.
     """
+
     def __init__(self, pebble, blobdb=None):
         self._pebble = pebble
         self._blobdb = blobdb or BlobDBClient(pebble)
@@ -33,8 +34,11 @@ class AppGlances(object):
         :type slices: list[.AppGlanceSlice]
         """
         glance = AppGlance(
-            version=1,
-            creation_time=int(time.time()),
-            slices=(slices or [])
+            version=1, creation_time=int(time.time()), slices=(slices or [])
         )
-        SyncWrapper(self._blobdb.insert, BlobDatabaseID.AppGlance, target_app, glance.serialise()).wait()
+        SyncWrapper(
+            self._blobdb.insert,
+            BlobDatabaseID.AppGlance,
+            target_app,
+            glance.serialise(),
+        ).wait()

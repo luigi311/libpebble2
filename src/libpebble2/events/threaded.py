@@ -1,4 +1,4 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 import logging
 import threading
@@ -14,6 +14,7 @@ class ThreadedEventHandler(BaseEventHandler):
     """
     A threaded implementation of :class:`.BaseEventHandler`.
     """
+
     def __init__(self):
         self._handlers = {}
         self._handle_map = {}
@@ -58,7 +59,7 @@ class _BlockingEventWait(object):
         self.handle = self.event_handler.register_handler(event, self.handle_result)
 
     def handle_result(self, *args):
-        self.result, = args
+        (self.result,) = args
         self.event_handler.unregister_handler(self.handle)
         self.block.set()
 
@@ -89,4 +90,3 @@ class _QueuedEventWait(BaseEventQueue):
     def __iter__(self):
         while True:
             yield self.get()
-

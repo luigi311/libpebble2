@@ -1,16 +1,51 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from enum import IntEnum
 
 from .base import PebblePacket
-from .base.types import BinaryArray, Boolean, Embed, FixedString, Int16, Optional, PascalString, Uint16, Uint32, Uint64, Uint8, Union
+from .base.types import (
+    BinaryArray,
+    Boolean,
+    Embed,
+    FixedString,
+    Int16,
+    Optional,
+    PascalString,
+    Uint16,
+    Uint32,
+    Uint64,
+    Uint8,
+    Union,
+)
 
 # Time manipulation
 
-__all__ = ["GetTimeRequest", "GetTimeResponse", "SetLocaltime", "SetUTC", "TimeMessage", "AppVersionRequest",
-           "AppVersionResponse", "PhoneAppVersion", "FirmwareUpdateStartResponse", "SystemMessage", "BLEControl",
-           "WatchVersionRequest", "WatchVersionResponse", "WatchFirmwareVersion", "WatchVersion", "Ping", "Pong",
-           "PingPong", "Reset", "Model", "ModelRequest", "ModelResponse", "ModelError", "WatchModel"]
+__all__ = [
+    "GetTimeRequest",
+    "GetTimeResponse",
+    "SetLocaltime",
+    "SetUTC",
+    "TimeMessage",
+    "AppVersionRequest",
+    "AppVersionResponse",
+    "PhoneAppVersion",
+    "FirmwareUpdateStartResponse",
+    "SystemMessage",
+    "BLEControl",
+    "WatchVersionRequest",
+    "WatchVersionResponse",
+    "WatchFirmwareVersion",
+    "WatchVersion",
+    "Ping",
+    "Pong",
+    "PingPong",
+    "Reset",
+    "Model",
+    "ModelRequest",
+    "ModelResponse",
+    "ModelError",
+    "WatchModel",
+]
 
 
 class GetTimeRequest(PebblePacket):
@@ -33,15 +68,14 @@ class SetUTC(PebblePacket):
 
 class TimeMessage(PebblePacket):
     class Meta:
-        endpoint = 0x0b
+        endpoint = 0x0B
 
     kind = Uint8()
-    message = Union(kind, {
-        0x00: GetTimeRequest,
-        0x01: GetTimeResponse,
-        0x02: SetLocaltime,
-        0x03: SetUTC
-    })
+    message = Union(
+        kind,
+        {0x00: GetTimeRequest, 0x01: GetTimeResponse, 0x02: SetLocaltime, 0x03: SetUTC},
+    )
+
 
 # Phone app version
 
@@ -66,10 +100,14 @@ class PhoneAppVersion(PebblePacket):
         endpoint = 0x11
 
     kind = Uint8()
-    message = Union(kind, {
-        0x00: AppVersionRequest,
-        0x01: AppVersionResponse,
-    })
+    message = Union(
+        kind,
+        {
+            0x00: AppVersionRequest,
+            0x01: AppVersionResponse,
+        },
+    )
+
 
 # System message
 
@@ -81,7 +119,7 @@ class FirmwareUpdateStartResponse(PebblePacket):
 class SystemMessage(PebblePacket):
     class Meta:
         endpoint = 0x12
-        endianness = '<'
+        endianness = "<"
 
     class Type(IntEnum):
         NewFirmwareAvailable = 0x00
@@ -93,13 +131,18 @@ class SystemMessage(PebblePacket):
         StartReconnecting = 0x07
         MAPDisabled = 0x08
         MAPENabled = 0x09
-        FirmwareUpdateStartResponse = 0x0a
+        FirmwareUpdateStartResponse = 0x0A
 
     command = Uint8(default=0x00)
     message_type = Uint8(enum=Type)
-    extra_data = Union(message_type, {
-        0x0a: FirmwareUpdateStartResponse,
-    }, accept_missing=True)
+    extra_data = Union(
+        message_type,
+        {
+            0x0A: FirmwareUpdateStartResponse,
+        },
+        accept_missing=True,
+    )
+
 
 # BLE control
 
@@ -107,11 +150,12 @@ class SystemMessage(PebblePacket):
 class BLEControl(PebblePacket):
     class Meta:
         endpoint = 0x33
-        endianness = '<'
+        endianness = "<"
 
     opcode = Uint8(default=0x4)
     discoverable = Boolean()
     duration = Uint16()
+
 
 # Firmware/hardware version
 
@@ -140,7 +184,7 @@ class WatchVersionResponse(PebblePacket):
     resource_timestamp = Uint32()
     language = FixedString(6)
     language_version = Uint16()
-    capabilities = Uint64(endianness='<')
+    capabilities = Uint64(endianness="<")
     is_unfaithful = Optional(Boolean())
 
 
@@ -149,10 +193,14 @@ class WatchVersion(PebblePacket):
         endpoint = 0x10
 
     command = Uint8()
-    data = Union(command, {
-        0x00: WatchVersionRequest,
-        0x01: WatchVersionResponse,
-    })
+    data = Union(
+        command,
+        {
+            0x00: WatchVersionRequest,
+            0x01: WatchVersionResponse,
+        },
+    )
+
 
 # Ping, pong.
 
@@ -171,10 +219,14 @@ class PingPong(PebblePacket):
 
     command = Uint8()
     cookie = Uint32()
-    message = Union(command, {
-        0: Ping,
-        1: Pong,
-    })
+    message = Union(
+        command,
+        {
+            0: Ping,
+            1: Pong,
+        },
+    )
+
 
 # Reset
 
@@ -182,7 +234,7 @@ class PingPong(PebblePacket):
 class Reset(PebblePacket):
     class Meta:
         endpoint = 2003
-        endianness = '<'
+        endianness = "<"
 
     class Command(IntEnum):
         Reset = 0x00
@@ -191,6 +243,7 @@ class Reset(PebblePacket):
         PRF = 0x03
 
     command = Uint8(enum=Command)
+
 
 # Watch colour (on top of the former factory/system settings endpoints)
 
@@ -233,8 +286,11 @@ class WatchModel(PebblePacket):
         endpoint = 5001
 
     command = Uint8()
-    data = Union(command, {
-        0x00: ModelRequest,
-        0x01: ModelResponse,
-        0xff: ModelError,
-    })
+    data = Union(
+        command,
+        {
+            0x00: ModelRequest,
+            0x01: ModelResponse,
+            0xFF: ModelError,
+        },
+    )

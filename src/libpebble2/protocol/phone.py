@@ -1,10 +1,22 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from .base import PebblePacket
 from .base.types import PascalList, PascalString, Uint32, Uint8, Union
 
-__all__ = ["AnswerCall", "HangUpCall", "PhoneStateRequest", "IncomingCall", "OutgoingCall", "MissedCall",
-           "Ring", "CallStart", "CallEnd", "CallStateItem", "PhoneStateResponse", "PhoneNotification"]
+__all__ = [
+    "AnswerCall",
+    "HangUpCall",
+    "PhoneStateRequest",
+    "IncomingCall",
+    "OutgoingCall",
+    "MissedCall",
+    "Ring",
+    "CallStart",
+    "CallEnd",
+    "CallStateItem",
+    "PhoneStateResponse",
+    "PhoneNotification",
+]
 
 
 class AnswerCall(PebblePacket):
@@ -48,11 +60,14 @@ class CallEnd(PebblePacket):
 class CallStateItem(PebblePacket):
     command_id = Uint8()
     cookie = Uint32()
-    item = Union(command_id, {
-        0x04: IncomingCall,
-        0x05: OutgoingCall,
-        0x08: CallStart,
-    })
+    item = Union(
+        command_id,
+        {
+            0x04: IncomingCall,
+            0x05: OutgoingCall,
+            0x08: CallStart,
+        },
+    )
 
 
 class PhoneStateResponse(PebblePacket):
@@ -65,15 +80,18 @@ class PhoneNotification(PebblePacket):
 
     command_id = Uint8()
     cookie = Uint32()
-    message = Union(command_id, {
-        0x01: AnswerCall,
-        0x02: HangUpCall,
-        0x03: PhoneStateRequest,
-        0x83: PhoneStateResponse,
-        0x04: IncomingCall,
-        0x05: OutgoingCall,
-        0x06: MissedCall,
-        0x07: Ring,
-        0x08: CallStart,
-        0x09: CallEnd,
-    })
+    message = Union(
+        command_id,
+        {
+            0x01: AnswerCall,
+            0x02: HangUpCall,
+            0x03: PhoneStateRequest,
+            0x83: PhoneStateResponse,
+            0x04: IncomingCall,
+            0x05: OutgoingCall,
+            0x06: MissedCall,
+            0x07: Ring,
+            0x08: CallStart,
+            0x09: CallEnd,
+        },
+    )

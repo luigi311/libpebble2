@@ -1,4 +1,4 @@
-__author__ = 'Liam McLoughlin'
+__author__ = "Liam McLoughlin"
 
 import time
 import struct
@@ -20,9 +20,10 @@ class PULSETransport(BaseTransport):
     :param connection: A PULSE2 Link object to tunnel Pebble Protocol over.
     :type link: pulse2.link.Link
     """
+
     must_initialise = True
 
-    PPOPULSE_PORT = 0x3e22
+    PPOPULSE_PORT = 0x3E22
 
     OPCODE_PROTOCOL_DATA = 0x1
     OPCODE_PROTOCOL_OPEN = 0x2
@@ -34,17 +35,17 @@ class PULSETransport(BaseTransport):
 
         self.link = link
         self.connection = None
-        self.buffer = b''
+        self.buffer = b""
 
     @staticmethod
     def _chunks(list_items, chunk_length):
         for i in range(0, len(list_items), chunk_length):
-            yield list_items[i:i + chunk_length]
+            yield list_items[i : i + chunk_length]
 
     def connect(self):
-        self.connection = self.link.open_socket('reliable', self.PPOPULSE_PORT)
+        self.connection = self.link.open_socket("reliable", self.PPOPULSE_PORT)
         if not self.connection:
-            raise ConnectionError('Failed to open PPoPULSE socket')
+            raise ConnectionError("Failed to open PPoPULSE socket")
 
         self._send_with_opcode(self.OPCODE_PROTOCOL_OPEN)
         start_time = time.time()
@@ -53,7 +54,7 @@ class PULSETransport(BaseTransport):
             if opcode == self.OPCODE_PROTOCOL_OPEN:
                 break
         else:
-            raise ConnectionError('Timeout waiting for PPoPULSE open ACK')
+            raise ConnectionError("Timeout waiting for PPoPULSE open ACK")
 
     def disconnect(self):
         if self.connected:
@@ -71,7 +72,7 @@ class PULSETransport(BaseTransport):
     def read_packet(self):
         while self.connected:
             if len(self.buffer) >= 2:
-                length, = struct.unpack('!H', self.buffer[:2])
+                (length,) = struct.unpack("!H", self.buffer[:2])
                 length += 4
 
                 if len(self.buffer) >= length:
@@ -94,7 +95,7 @@ class PULSETransport(BaseTransport):
             packet = self.connection.receive(block=True)
         except (AttributeError, pulse2.exceptions.SocketClosed):
             self.connection = None
-            raise ConnectionError('PULSE transport closed')
+            raise ConnectionError("PULSE transport closed")
 
         assert len(packet) >= 1
         opcode = packet[0] if isinstance(packet[0], int) else ord(packet[0])

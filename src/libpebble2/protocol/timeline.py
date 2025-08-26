@@ -3,15 +3,21 @@ from enum import IntEnum
 from .base import PebblePacket
 from .base.types import BinaryArray, FixedList, Uint16, Uint32, Uint8, Union, UUID
 
-__author__ = 'katharine'
+__author__ = "katharine"
 
 """
 This file is special in that it actually contains definitions of
 blobdb blob formats rather than pebble protocol messages.
 """
 
-__all__ = ["TimelineAttribute", "TimelineAction", "TimelineItem",
-           "TimelineActionEndpoint", "ActionResponse", "InvokeAction"]
+__all__ = [
+    "TimelineAttribute",
+    "TimelineAction",
+    "TimelineItem",
+    "TimelineActionEndpoint",
+    "ActionResponse",
+    "InvokeAction",
+]
 
 
 class TimelineAttribute(PebblePacket):
@@ -33,7 +39,7 @@ class TimelineAction(PebblePacket):
         OpenWatchapp = 0x07
         Empty = 0x08
         Remove = 0x09
-        OpenPin = 0x0a
+        OpenPin = 0x0A
 
     action_id = Uint8()
     type = Uint8(enum=Type)
@@ -43,7 +49,7 @@ class TimelineAction(PebblePacket):
 
 class TimelineItem(PebblePacket):
     class Meta:
-        endianness = '<'
+        endianness = "<"
 
     class Type(IntEnum):
         Notification = 1
@@ -75,6 +81,7 @@ class ActionResponse(PebblePacket):
     class Response(IntEnum):
         ACK = 0
         NACK = 1
+
     item_id = UUID()
     response = Uint8(enum=Response)
     num_attributes = Uint8()
@@ -84,10 +91,7 @@ class ActionResponse(PebblePacket):
 class TimelineActionEndpoint(PebblePacket):
     class Meta:
         endpoint = 0x2CB0
-        endianness = '<'
+        endianness = "<"
 
     command = Uint8()
-    data = Union(command, {
-        0x02: InvokeAction,
-        0x11: ActionResponse
-    })
+    data = Union(command, {0x02: InvokeAction, 0x11: ActionResponse})

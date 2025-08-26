@@ -1,4 +1,4 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from .base import PebblePacket
 from .base.types import BinaryArray, PascalList, Uint16, Uint8, Union
@@ -22,11 +22,14 @@ class StopTransfer(PebblePacket):
 class AudioStream(PebblePacket):
     class Meta:
         endpoint = 0x2710
-        endianness = '<'
+        endianness = "<"
 
     packet_id = Uint8()
     session_id = Uint16()
-    data = Union(packet_id, {
-        0x02: DataTransfer,
-        0x03: StopTransfer,
-    })
+    data = Union(
+        packet_id,
+        {
+            0x02: DataTransfer,
+            0x03: StopTransfer,
+        },
+    )

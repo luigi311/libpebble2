@@ -1,14 +1,36 @@
-__author__ = 'katharine'
+__author__ = "katharine"
 
 from enum import IntEnum
 
 from .base import PebblePacket
-from .base.types import BinaryArray, NullTerminatedString, PascalString, Uint32, Uint8, Union
+from .base.types import (
+    BinaryArray,
+    NullTerminatedString,
+    PascalString,
+    Uint32,
+    Uint8,
+    Union,
+)
 
-__all__ = ["ObjectType", "PutBytesInstall", "PutBytesInit", "PutBytesAppInit", "PutBytesPut", "PutBytesCommit",
-           "PutBytesAbort", "PutBytes", "PutBytesApp", "PutBytesResponse", "GetBytes", "GetBytesCoredumpRequest",
-           "GetBytesDataResponse", "GetBytesFileRequest", "GetBytesInfoResponse", "GetBytesFlashRequest",
-           "GetBytesUnreadCoredumpRequest"]
+__all__ = [
+    "ObjectType",
+    "PutBytesInstall",
+    "PutBytesInit",
+    "PutBytesAppInit",
+    "PutBytesPut",
+    "PutBytesCommit",
+    "PutBytesAbort",
+    "PutBytes",
+    "PutBytesApp",
+    "PutBytesResponse",
+    "GetBytes",
+    "GetBytesCoredumpRequest",
+    "GetBytesDataResponse",
+    "GetBytesFileRequest",
+    "GetBytesInfoResponse",
+    "GetBytesFlashRequest",
+    "GetBytesUnreadCoredumpRequest",
+]
 
 
 class ObjectType(IntEnum):
@@ -59,13 +81,16 @@ class PutBytes(PebblePacket):
         register = False
 
     command = Uint8()
-    data = Union(command, {
-        0x01: PutBytesInit,
-        0x02: PutBytesPut,
-        0x03: PutBytesCommit,
-        0x04: PutBytesAbort,
-        0x05: PutBytesInstall,
-    })
+    data = Union(
+        command,
+        {
+            0x01: PutBytesInit,
+            0x02: PutBytesPut,
+            0x03: PutBytesCommit,
+            0x04: PutBytesAbort,
+            0x05: PutBytesInstall,
+        },
+    )
 
 
 # This is something of a hack: there are two different and fundamentally incompatible init packers,
@@ -76,13 +101,16 @@ class PutBytesApp(PebblePacket):
         register = False
 
     command = Uint8()
-    data = Union(command, {
-        0x01: PutBytesAppInit,
-        0x02: PutBytesPut,
-        0x03: PutBytesCommit,
-        0x04: PutBytesAbort,
-        0x05: PutBytesInstall,
-    })
+    data = Union(
+        command,
+        {
+            0x01: PutBytesAppInit,
+            0x02: PutBytesPut,
+            0x03: PutBytesCommit,
+            0x04: PutBytesAbort,
+            0x05: PutBytesInstall,
+        },
+    )
 
 
 class PutBytesResponse(PebblePacket):
@@ -99,6 +127,7 @@ class PutBytesResponse(PebblePacket):
 
 class GetBytesCoredumpRequest(PebblePacket):
     """Requests a coredump."""
+
     pass
 
 
@@ -121,17 +150,20 @@ class GetBytesDataResponse(PebblePacket):
 
 class GetBytesFileRequest(PebblePacket):
     """Requests a file. This only works on non-release firmwares."""
+
     filename = PascalString(null_terminated=True, count_null_terminator=False)
 
 
 class GetBytesFlashRequest(PebblePacket):
     """Requests a region of flash. This only works on non-release firmwares."""
+
     offset = Uint32()
     length = Uint32()
 
 
 class GetBytesUnreadCoredumpRequest(PebblePacket):
     """Requests a coredump, but errors if it has already been read."""
+
     pass
 
 
@@ -141,11 +173,14 @@ class GetBytes(PebblePacket):
 
     command = Uint8()
     transaction_id = Uint8()
-    message = Union(command, {
-        0x00: GetBytesCoredumpRequest,
-        0x01: GetBytesInfoResponse,
-        0x02: GetBytesDataResponse,
-        0x03: GetBytesFileRequest,
-        0x04: GetBytesFlashRequest,
-        0x05: GetBytesUnreadCoredumpRequest,
-    })
+    message = Union(
+        command,
+        {
+            0x00: GetBytesCoredumpRequest,
+            0x01: GetBytesInfoResponse,
+            0x02: GetBytesDataResponse,
+            0x03: GetBytesFileRequest,
+            0x04: GetBytesFlashRequest,
+            0x05: GetBytesUnreadCoredumpRequest,
+        },
+    )
