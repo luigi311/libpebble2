@@ -16,6 +16,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8.4.1",
+    "pytest-ty>=0.1.2",
     "ruff>=0.12.10",
     "ty>=0.0.1a19",
 ]
@@ -55,3 +56,5 @@ unused-ignore-comment = "warn"
 redundant-cast = "ignore"
 possibly-unbound-attribute = "error"
 possibly-unbound-import = "error"
+unresolved-attribute = "error"
+invalid-argument-type = "error"

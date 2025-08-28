@@ -38,6 +38,10 @@ jobs:
 
       - name: "Run tests"
         run: uv run pytest -v
-      
+
+      - name: "Typecheck"
+        continue-on-error: true
+        run: uv run pytest --ty src/libpebble2
+          
       - name: "Build"
         run: uv build
