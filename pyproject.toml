@@ -7,18 +7,18 @@ name = "libpebble2"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "pyserial>=3.5",
-    "websocket-client>=1.8.0",
+    "websocket-client>=1.9.0",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest>=8.4.1",
-    "pytest-ty>=0.1.2",
-    "ruff>=0.12.10",
-    "ty>=0.0.1a19",
+    "pytest>=9.0.2",
+    "pytest-ty>=0.2.0",
+    "ruff>=0.15.6",
+    "ty>=0.0.23",
 ]
 
 [tool.ruff]
@@ -50,11 +50,3 @@ ignore = [
     "D407", # missing-dashed-underline-after-section
     "S311", # rand-usage
 ]
-
-[tool.ty.rules]
-unused-ignore-comment = "warn"
-redundant-cast = "ignore"
-possibly-unbound-attribute = "error"
-possibly-unbound-import = "error"
-unresolved-attribute = "error"
-invalid-argument-type = "error"
